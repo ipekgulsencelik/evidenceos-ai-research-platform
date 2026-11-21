@@ -24,8 +24,10 @@ async def test_postgres_write_read_in_real_database() -> None:
     engine = create_async_engine(dsn)
     try:
         factory = async_sessionmaker(engine, expire_on_commit=False)
+
         def make_uow() -> SqlAlchemyUnitOfWork:
             return SqlAlchemyUnitOfWork(factory)
+
         async with engine.connect() as conn:
             assert (await conn.execute(text("SELECT 1"))).scalar_one() == 1
         item = await CreateProject(make_uow).execute(

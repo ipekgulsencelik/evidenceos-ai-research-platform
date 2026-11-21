@@ -16,9 +16,7 @@ from tests.fakes import FakeUnitOfWork
 
 @pytest.fixture
 def client() -> Iterator[TestClient]:
-    settings = Settings(
-        app_env="test", database_url="postgresql+asyncpg://u:p@localhost:5432/test"
-    )
+    settings = Settings(app_env="test", database_url="postgresql+asyncpg://u:p@localhost:5432/test")
     app = create_app(settings)
     store: dict[UUID, ResearchProject] = {}
     app.dependency_overrides[get_uow_factory] = lambda: lambda: FakeUnitOfWork(store)

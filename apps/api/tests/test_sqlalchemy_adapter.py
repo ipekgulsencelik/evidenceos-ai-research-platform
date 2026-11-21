@@ -25,8 +25,10 @@ async def test_sqlalchemy_uow_round_trip() -> None:
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
         session_factory = async_sessionmaker(engine, expire_on_commit=False)
+
         def make_uow() -> SqlAlchemyUnitOfWork:
             return SqlAlchemyUnitOfWork(session_factory)
+
         created = await CreateProject(make_uow).execute(
             CreateProjectCommand("Legal references", ResearchDomain.LEGAL)
         )
