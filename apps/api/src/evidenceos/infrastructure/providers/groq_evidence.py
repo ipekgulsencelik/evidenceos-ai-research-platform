@@ -77,9 +77,11 @@ class GroqEvidenceJudge:
             verdict = EvidenceVerdict(result["verdict"])
             quote = result.get("quote")
             explanation = result["explanation"]
-            if (quote is not None and not isinstance(quote, str)) or not isinstance(
-                explanation, str
-            ) or not 1 <= len(explanation) <= 1000:
+            if (
+                (quote is not None and not isinstance(quote, str))
+                or not isinstance(explanation, str)
+                or not 1 <= len(explanation) <= 1000
+            ):
                 raise ValueError("Invalid evidence fields")
             return EvidenceJudgment(verdict, quote, explanation)
         except (httpx.HTTPError, ValueError, TypeError, KeyError, IndexError) as exc:
