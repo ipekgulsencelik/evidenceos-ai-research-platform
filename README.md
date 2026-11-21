@@ -122,8 +122,8 @@ cd apps/api
 uv run pytest -q
 ```
 
-`uv.lock` is checked in. `uv sync` prevents drift between the declared
-dependencies and the lockfile (see https://docs.astral.sh/uv/concepts/projects/sync/).
+`uv.lock` is not included in this foundation commit. Run `uv lock` in `apps/api`
+and commit the resulting lockfile to make dependency resolution reproducible.
 
 ## Architecture
 

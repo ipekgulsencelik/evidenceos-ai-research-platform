@@ -15,7 +15,8 @@ from tests.fakes import FakeUnitOfWork
 @pytest.mark.asyncio
 async def test_create_then_get_project() -> None:
     store: dict[UUID, ResearchProject] = {}
-    make_uow = lambda: FakeUnitOfWork(store)
+    def make_uow() -> FakeUnitOfWork:
+        return FakeUnitOfWork(store)
     created = await CreateProject(make_uow).execute(
         CreateProjectCommand("My thesis", ResearchDomain.ACADEMIC)
     )
@@ -26,7 +27,8 @@ async def test_create_then_get_project() -> None:
 
 @pytest.mark.asyncio
 async def test_get_missing_project_raises() -> None:
-    make_uow = lambda: FakeUnitOfWork({})
+    def make_uow() -> FakeUnitOfWork:
+        return FakeUnitOfWork({})
     with pytest.raises(ProjectNotFound):
         await GetProject(make_uow).execute(uuid4())
 

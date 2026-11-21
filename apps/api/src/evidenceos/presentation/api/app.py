@@ -16,6 +16,7 @@ from evidenceos.infrastructure.config import Settings, get_settings
 from evidenceos.presentation.api.routes.health import router as health_router
 from evidenceos.presentation.api.routes.projects import router as projects_router
 
+
 class RequestIdMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
         request_id = str(uuid4())

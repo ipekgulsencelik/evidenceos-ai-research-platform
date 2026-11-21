@@ -2,9 +2,9 @@ from collections.abc import AsyncIterator, Iterator
 from typing import cast
 from uuid import UUID
 
+import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
-import pytest
 from sqlalchemy.sql.elements import TextClause
 
 from evidenceos.domain.entities.project import ResearchProject
