@@ -142,3 +142,26 @@ a { text-underline-offset:3px; }
 .pdf-candidate-excerpt { display:block; white-space:pre-wrap; overflow-wrap:anywhere; max-height:170px; overflow:auto; font-size:12px; line-height:1.65; margin-top:10px; padding:12px; border-left:3px solid #20877e; background:#f1f8f6; }
 .pdf-retrieval-result { margin-top:15px; }
 @media (max-width:700px) { .pdf-import {padding:13px;} .pdf-upload-controls .field {min-width:100%;} }
+
+
+/* Source-grounded literature matrix with explicit upload consent. */
+.literature-intelligence { margin-top:0; }
+.literature-form { display:flex; flex-direction:column; align-items:flex-start; gap:12px; margin-top:16px; }
+.literature-form .field-label { margin:0; }
+.literature-form input[type=file] { width:100%; height:auto; min-height:48px; padding:11px; }
+.literature-consent { display:flex; gap:10px; align-items:start; color:#536e78; font-size:12px; line-height:1.6; max-width:830px; }
+.literature-consent input { margin-top:4px; width:16px; height:16px; accent-color:#147d76; flex-shrink:0; }
+.literature-results { margin-top:24px; }
+.literature-table-scroll { max-height:none; }
+.literature-table { min-width:1500px; table-layout:fixed; }
+.literature-table th:first-child { width:175px; }
+.literature-table td { width:220px; }
+.literature-cell p { margin:0 0 8px; white-space:pre-wrap; }
+.literature-cell small { display:block; color:#147d76; font-weight:700; margin-bottom:8px; }
+.literature-cell details { font-size:11px; }
+.literature-cell summary { cursor:pointer; color:#325a64; }
+.literature-cell blockquote { margin:8px 0; padding:8px; border-left:3px solid #15847a; background:#f2f8f6; white-space:pre-wrap; }
+.literature-empty,.literature-invalid { color:#6d8790; font-size:12px; line-height:1.5; }
+.literature-invalid { color:#a55b37; }
+.literature-subnote { display:block; font-size:11px; color:#79939a; margin-top:9px; overflow-wrap:anywhere; }
+@media(max-width:700px) { .literature-form .primary-btn {width:100%;} }
