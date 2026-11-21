@@ -1,7 +1,5 @@
 """Six-field scientific literature profile with exact, page-grounded quotations."""
 
-import re
-
 from evidenceos.domain.entities.document import ExtractedDocument
 from evidenceos.domain.entities.literature import (
     FACET_ORDER,
