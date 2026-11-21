@@ -47,11 +47,9 @@ test("literature profile runtime boundary validates six field states", () => {
 
 test("comparison export includes exact page references and sanitizes formulas", () => {
   const csv = literatureProfileCsv([sample]);
-  assert.ok(csv.includes('"\'=DANGEROUS"'));
-
-
-
-  assert.ok(csv.includes('"\'+A1"'));
+  const apostrophe = "'";
+  assert.ok(csv.includes('"' + apostrophe + '=DANGEROUS"'));
+  assert.ok(csv.includes('"' + apostrophe + '+A1"'));
   assert.ok(csv.includes('"PDF page 1"'));
   assert.ok(csv.includes("The objective was to test this"));
 });
