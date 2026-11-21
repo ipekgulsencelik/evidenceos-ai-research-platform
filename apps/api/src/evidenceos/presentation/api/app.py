@@ -20,8 +20,8 @@ from evidenceos.domain.errors import (
     InvalidDoi,
     InvalidProjectTitle,
     InvalidResearchWorkspace,
-    LiteratureEntryNotFound,
     InvalidSearchQuery,
+    LiteratureEntryNotFound,
     ProjectNotFound,
 )
 from evidenceos.infrastructure.config import Settings, get_settings

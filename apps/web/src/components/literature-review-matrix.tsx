@@ -72,11 +72,6 @@ function ReviewCell({
   revisions?: ReviewRevision[];
   saving?: boolean;
   saved?: boolean;
-  onSave?: () => void;
-  onLoadHistory?: () => void;
-  revisions?: ReviewRevision[];
-  saving?: boolean;
-  saved?: boolean;
 }) {
   const id = row.key.replaceAll(":", "-");
   return (

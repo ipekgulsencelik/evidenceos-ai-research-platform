@@ -58,8 +58,16 @@ def example_profile() -> LiteratureProfile:
                     FindingStatus.GROUNDED if facet is LiteratureFacet.AIM
                     else FindingStatus.NOT_IDENTIFIED
                 ),
-                value=("Evaluate chatbot use in adolescents." if facet is LiteratureFacet.AIM else None),
-                quote=("Objective: evaluate chatbot use." if facet is LiteratureFacet.AIM else None),
+                value=(
+                    "Evaluate chatbot use in adolescents."
+                    if facet is LiteratureFacet.AIM
+                    else None
+                ),
+                quote=(
+                    "Objective: evaluate chatbot use."
+                    if facet is LiteratureFacet.AIM
+                    else None
+                ),
                 locator=("PDF page 1" if facet is LiteratureFacet.AIM else None),
             )
             for facet in FACET_ORDER
@@ -98,7 +106,9 @@ async def test_project_scope_and_append_only_review_use_cases() -> None:
         await SaveLiteratureAnalysis(make_uow).execute(uuid4(), example_profile())
 
     first = await SaveReviewRevision(make_uow).execute(
-        SaveReviewCommand(project.id, entry.id, LiteratureFacet.AIM, "Initial", "Check paper", False)
+        SaveReviewCommand(
+            project.id, entry.id, LiteratureFacet.AIM, "Initial", "Check paper", False
+        )
     )
     second_note = await SaveReviewRevision(make_uow).execute(
         SaveReviewCommand(project.id, entry.id, LiteratureFacet.AIM, "Updated", "Checked", True)

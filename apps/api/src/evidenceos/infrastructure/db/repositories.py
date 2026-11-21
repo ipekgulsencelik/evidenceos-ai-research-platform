@@ -13,9 +13,8 @@ from evidenceos.domain.entities.literature import (
     LiteratureProfile,
     LiteratureRejectionReason,
 )
-from evidenceos.domain.entities.workspace import LiteratureEntry, ReviewRevision
-
 from evidenceos.domain.entities.project import ResearchDomain, ResearchProject
+from evidenceos.domain.entities.workspace import LiteratureEntry, ReviewRevision
 from evidenceos.infrastructure.db.models import (
     LiteratureEntryRow,
     ProjectRow,

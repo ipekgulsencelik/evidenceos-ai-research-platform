@@ -5,8 +5,8 @@ from uuid import UUID
 
 from evidenceos.domain.entities.project import ResearchProject
 from evidenceos.domain.entities.workspace import LiteratureEntry, ReviewRevision
-from evidenceos.domain.ports.workspace import LiteratureRepository
 from evidenceos.domain.ports.repositories import ProjectRepository
+from evidenceos.domain.ports.workspace import LiteratureRepository
 
 
 class FakeProjectRepository:
