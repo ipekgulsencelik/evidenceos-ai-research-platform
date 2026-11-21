@@ -124,10 +124,7 @@ export function ScientificLiteratureIntelligence() {
             setReviews((previous) => ({
               ...previous,
               [key]: {
-                corrected_value: "",
-                note: "",
-                reviewed: false,
-                ...(previous[key] || {}),
+                ...(previous[key] ?? { corrected_value: "", note: "", reviewed: false }),
                 ...change,
               },
             }))}
