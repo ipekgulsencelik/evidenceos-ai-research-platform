@@ -101,4 +101,6 @@ class GroqLiteratureAnalyst:
                 findings.append(ProposedFinding(facet, snippet_id, quote, value))
             return tuple(findings)
         except (httpx.HTTPError, ValueError, TypeError, KeyError, IndexError) as exc:
-            raise EvidenceProviderFailure("Literature model unavailable or invalid response") from exc
+            raise EvidenceProviderFailure(
+                "Literature model unavailable or invalid response"
+            ) from exc

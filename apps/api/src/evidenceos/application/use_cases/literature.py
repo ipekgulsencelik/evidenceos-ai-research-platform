@@ -105,10 +105,14 @@ class ExtractLiteratureProfile:
                 and candidates[0].value is None
                 and candidates[0].quote is None
             ):
-                findings.append(LiteratureFinding(facet, FindingStatus.NOT_IDENTIFIED, None, None, None))
+                findings.append(
+                    LiteratureFinding(facet, FindingStatus.NOT_IDENTIFIED, None, None, None)
+                )
                 continue
             if len(candidates) != 1:
-                findings.append(LiteratureFinding(facet, FindingStatus.REJECTED_QUOTE, None, None, None))
+                findings.append(
+                    LiteratureFinding(facet, FindingStatus.REJECTED_QUOTE, None, None, None)
+                )
                 continue
             proposal = candidates[0]
             snippet = available.get(proposal.snippet_id or "")
@@ -122,7 +126,9 @@ class ExtractLiteratureProfile:
                 or not 1 <= len(value) <= 500
                 or quote not in snippet.passage
             ):
-                findings.append(LiteratureFinding(facet, FindingStatus.REJECTED_QUOTE, None, None, None))
+                findings.append(
+                    LiteratureFinding(facet, FindingStatus.REJECTED_QUOTE, None, None, None)
+                )
                 continue
             findings.append(
                 LiteratureFinding(facet, FindingStatus.GROUNDED, value, quote, snippet.locator)
