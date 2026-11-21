@@ -165,3 +165,42 @@ a { text-underline-offset:3px; }
 .literature-invalid { color:#a55b37; }
 .literature-subnote { display:block; font-size:11px; color:#79939a; margin-top:9px; overflow-wrap:anywhere; }
 @media(max-width:700px) { .literature-form .primary-btn {width:100%;} }
+
+
+/* Readable, filterable research matrix: document x field, never six cramped columns. */
+.literature-filters {
+  display:grid; grid-template-columns:minmax(240px,1fr) minmax(165px,.65fr) minmax(165px,.65fr);
+  gap:12px; margin-top:21px;
+}
+.literature-filters label {display:grid; gap:7px; font-size:11px; font-weight:700; color:#526d77;}
+.literature-filters .field {width:100%; margin:0;}
+.literature-match-count {font-size:12px; color:#6e858f; margin:15px 0 5px;}
+.literature-readable-scroll {max-height:none; overflow-x:auto;}
+.literature-readable-table {min-width:780px; table-layout:fixed; line-height:1.65;}
+.literature-readable-table th:nth-child(1) {width:19%;}
+.literature-readable-table th:nth-child(2) {width:17%;}
+.literature-readable-table th:nth-child(3) {width:32%;}
+.literature-readable-table th:nth-child(4) {width:32%;}
+.literature-readable-table td,.literature-readable-table th {padding:14px 13px; overflow-wrap:anywhere;}
+.literature-readable-table tbody tr:nth-child(even) {background:#fbfdfd;}
+.literature-readable-table tbody th {background:transparent; position:static; font-size:12px;}
+.literature-readable-table .literature-cell p {font-size:13px;}
+.literature-locator {font-size:11px; color:#147d76; font-weight:700;}
+.literature-corrected-locator {font-size:11px!important; margin-top:7px!important; color:#875b26;}
+.literature-rejection p {font-size:12px; line-height:1.55; margin:7px 0;}
+.literature-invalid {display:inline-flex; align-items:center; gap:6px; font-weight:700;}
+.literature-review-cell details,.literature-cell details {margin-top:9px;}
+.literature-review-cell summary {color:#127c76; font-size:12px; cursor:pointer;}
+.literature-review-editor {display:grid; gap:8px; margin-top:11px;}
+.literature-review-editor label {font-size:11px; font-weight:700; color:#526d77;}
+.literature-review-editor .review-textarea {width:100%; min-height:75px; height:auto; padding:10px; line-height:1.5; resize:vertical;}
+.literature-checked-label {display:flex; align-items:flex-start; gap:7px; font-weight:500!important; line-height:1.4;}
+.literature-checked-label input {accent-color:#117d77; margin-top:2px;}
+.literature-review-editor small {font-size:11px; color:#718a93;}
+.literature-human-value {background:#fff9e8; padding:9px; border-radius:7px; font-size:12px; white-space:pre-wrap;}
+.literature-review-tag {color:#116f66; font-size:11px; font-weight:700;}
+.literature-no-results {margin:0; padding:26px; text-align:center; font-size:13px; color:#617983;}
+@media(max-width:820px) {
+  .literature-filters {grid-template-columns:1fr;}
+  .literature-readable-table {min-width:700px;}
+}
