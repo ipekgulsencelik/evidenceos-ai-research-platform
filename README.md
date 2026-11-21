@@ -22,23 +22,23 @@ docker compose up --build -d
 docker compose ps
 ```
 
-The API is exposed only on **127.0.0.1:8000** by default. Test via:
+The Docker API is exposed only on **127.0.0.1:8001** by default. The container still listens on port 8000. Set `EVIDENCEOS_API_HOST_PORT` in the root `.env` if 8001 is occupied. PostgreSQL is internal to the Docker network. Test via:
 
 ```bash
-curl http://localhost:8000/api/v1/health/live
-curl http://localhost:8000/api/v1/health/ready
+curl http://localhost:8001/api/v1/health/live
+curl http://localhost:8001/api/v1/health/ready
 ```
 
 On PowerShell, use `Invoke-RestMethod` or `curl.exe`. For example:
 
 ```powershell
-Invoke-RestMethod http://localhost:8000/api/v1/health/live
-Invoke-RestMethod -Method Post http://localhost:8000/api/v1/projects `
+Invoke-RestMethod http://localhost:8001/api/v1/health/live
+Invoke-RestMethod -Method Post http://localhost:8001/api/v1/projects `
   -ContentType 'application/json' `
   -Body '{"title":"AI in adolescents","domain":"academic"}'
 ```
 
-For development only, OpenAPI interactive docs: http://localhost:8000/docs
+For development only, OpenAPI interactive docs: http://localhost:8001/docs
 
 Stop and clean:
 
@@ -104,7 +104,7 @@ by Git. A database migration is required before creating projects.
 Example:
 
 ```bash
-curl -X POST http://localhost:8000/api/v1/projects \
+curl -X POST http://localhost:8001/api/v1/projects \
   -H 'Content-Type: application/json' \
   -d '{"title":"Legal research","domain":"legal"}'
 ```
