@@ -75,3 +75,11 @@ instruments, findings and limitations from a PDF. Each included field must
 have an exact quote from a selected original page. Compare up to five
 documents and export CSV. Manual scientific verification is still required.
 Details: docs/scientific-literature-intelligence.md.
+
+
+## Scientific literature review-quality update
+
+The six-field extraction matrix now has search, field/status filters,
+page-grounded quote status explanations and separate reviewer annotations,
+with safe CSV export. Model quotes that cannot be verified are not displayed
+as evidence. See docs/literature-review-quality.md.
