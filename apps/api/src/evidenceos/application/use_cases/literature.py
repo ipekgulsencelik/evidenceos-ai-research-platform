@@ -83,6 +83,7 @@ _FACET_TERMS: dict[LiteratureFacet, tuple[str, ...]] = {
     ),
 }
 
+
 def _windows(text: str, width: int = 1150, overlap: int = 140) -> list[str]:
     windows: list[str] = []
     start = 0
