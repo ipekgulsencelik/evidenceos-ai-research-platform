@@ -8,3 +8,19 @@ class InvalidProjectTitle(DomainError):
 
 class ProjectNotFound(DomainError):
     """Raised when a project identifier cannot be resolved."""
+
+
+class InvalidDoi(ValueError):
+    """Supplied identifier does not match DOI format."""
+
+
+class InvalidSearchQuery(ValueError):
+    """Invalid academic search arguments."""
+
+
+class AcademicProviderError(RuntimeError):
+    """External academic metadata provider failed or returned bad data."""
+
+
+class AcademicConfigurationError(RuntimeError):
+    """Required academic provider configuration is missing."""

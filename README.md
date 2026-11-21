@@ -122,8 +122,8 @@ cd apps/api
 uv run pytest -q
 ```
 
-`uv.lock` is not included in this foundation commit. Run `uv lock` in `apps/api`
-and commit the resulting lockfile to make dependency resolution reproducible.
+`uv.lock` is checked in. `uv sync` prevents drift between the declared
+dependencies and the lockfile (see https://docs.astral.sh/uv/concepts/projects/sync/).
 
 ## Architecture
 
@@ -154,3 +154,35 @@ See [`docs/architecture`](docs/architecture/README.md) and
 No claims of production readiness are made for this repository; it is
 **production-oriented scaffolding** and requires threat modeling, secure
 identity, load testing, observability, and operational review before deployment.
+
+
+## Phase 1.1 — Academic Research Engine
+
+EvidenceOS now has provider-neutral academic metadata workflows:
+
+- `GET /api/v1/academic/works?query=artificial%20intelligence&limit=10` searches OpenAlex.
+- `POST /api/v1/academic/citations/verify` with JSON
+  `{"doi":"10.1000/xyz","expected_title":"Article title"}` retrieves Crossref metadata.
+- Citation statuses: `verified`, `title_mismatch`, `not_found_in_crossref`.
+  **Verified only means the DOI metadata exists and an optional title matches**;
+  it does *not* mean an article supports an argument or that a DOI is valid across
+  all registration agencies when Crossref does not have it.
+- `502` indicates an upstream failure; `503` is returned when the OpenAlex key
+  is not configured. Errors are never silently reported as empty results.
+
+### Configuration
+
+Get an OpenAlex API key from https://openalex.org/settings/api and set
+`EVIDENCEOS_OPENALEX_API_KEY` in your local `.env`. This key is never checked in.
+Set `EVIDENCEOS_CROSSREF_CONTACT_EMAIL` to identify your project for Crossref's
+polite API pool. Both providers are called via HTTPS and are covered by offline
+mock-transport tests. The search feature requires an active Internet connection.
+
+### Architectural boundary
+
+`domain/ports/academic.py` defines academic search and citation metadata
+interfaces. Use cases depend only on these ports. OpenAlex and Crossref adapters
+live in `infrastructure/providers`; FastAPI dependency functions are the
+composition root. Legal research and full-text claim verification are not yet
+implemented. Authentication, rate limiting, and audit logging are required
+before exposing a public deployment.

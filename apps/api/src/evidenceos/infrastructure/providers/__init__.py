@@ -1,0 +1,1 @@
+"""External research metadata adapters."""
