@@ -58,3 +58,12 @@ GitHub Actions runs backend lint, strict typing, coverage, PostgreSQL integratio
 This software is an **early-stage development system**. It does not yet include authentication, authorization, RBAC, tenant isolation, public rate limiting, security reviews, audit logs, or legal counsel signoff. **Do not publish the web or API service to the internet or process sensitive customer data.** Web and API host ports bind to `127.0.0.1` for local use. OpenAlex and Crossref are external dependencies whose data access and usage terms must be respected.
 
 Web dependency versions are pinned by the committed `apps/web/package-lock.json`; CI and Docker use `npm ci` to install reproducibly.
+
+## Phase 2.1 — Local PDF passage retrieval
+
+EvidenceOS now imports a selectable-text PDF (8 MiB / 30-page maximum), retrieves
+page-grounded candidate excerpts with deterministic keyword overlap and lets
+researchers insert chosen excerpts into the existing AI assessment form.
+PDF upload does not invoke Groq. Only explicit assessment sends selected passages.
+No OCR, persistent PDF storage, or scientific claim-support guarantees.
+See docs/pdf-document-intelligence.md for boundaries and limitations.

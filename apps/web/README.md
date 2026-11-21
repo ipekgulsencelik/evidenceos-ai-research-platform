@@ -43,3 +43,10 @@ Then open http://localhost:3000. Run `npm run check` and `npm run build` for qua
 Local development only: no identity, authorization, tenancy, or rate limiting. Do **not** expose this app directly on the public internet. The Next.js proxy validates parameters, forwards only fixed route paths, and never receives OpenAlex credentials. The backend reads the OpenAlex API key from root `.env`; secrets should never be committed to GitHub. This app only checks bibliographic records, **not** whether an article's conclusions support a scientific claim.
 
 The npm lockfile is committed; CI and Docker use `npm ci` for reproducible installs.
+
+## PDF evidence candidate retrieval
+
+Enter a claim and select a searchable PDF in Import evidence passages from PDF.
+Choose Find passages, review page-grounded candidate snippets and click
+Use selected excerpts in assessment. Only clicking Assess claim sends chosen
+text to Groq. Max 8 MiB / 30 pages, no OCR, no PDF storage.
