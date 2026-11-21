@@ -16,8 +16,8 @@ from evidenceos.domain.entities.literature import (
     FACET_ORDER,
     FindingStatus,
     LiteratureFacet,
-    LiteratureSnippet,
     LiteratureRejectionReason,
+    LiteratureSnippet,
     ProposedFinding,
 )
 from evidenceos.infrastructure.config import Settings
@@ -248,8 +248,6 @@ def test_literature_endpoint_returns_source_grounded_fields(api_client: TestClie
     assert data["findings"][0]["locator"] == "PDF page 1"
 
 
-
-
 @pytest.mark.asyncio
 async def test_invalid_model_quote_has_explainable_reason() -> None:
     result = await ExtractLiteratureProfile(BadQuoteAnalyst()).execute(DOC)
@@ -262,7 +260,7 @@ async def test_invalid_model_quote_has_explainable_reason() -> None:
 async def test_wrong_model_source_id_can_be_repaired_from_exact_pdf_quote() -> None:
     class WrongSource(FakeAnalyst):
         async def extract(self, snippets: SourceSnippets) -> tuple[ProposedFinding, ...]:
-            selected = next(x for x in snippets if x.locator == "PDF page 2")
+            assert any(x.locator == "PDF page 2" for x in snippets)
             return (
                 ProposedFinding(
                     LiteratureFacet.LIMITATIONS,
@@ -277,6 +275,7 @@ async def test_wrong_model_source_id_can_be_repaired_from_exact_pdf_quote() -> N
         item for item in result.findings if item.facet is LiteratureFacet.LIMITATIONS
     )
     assert finding.status is FindingStatus.GROUNDED
+    assert finding.quote is not None
     assert finding.quote in DOC.pages[1].text
     assert finding.locator == "PDF page 2"
     assert finding.locator_repaired is True
@@ -285,9 +284,7 @@ async def test_wrong_model_source_id_can_be_repaired_from_exact_pdf_quote() -> N
 
 @pytest.mark.asyncio
 async def test_quote_found_on_multiple_pages_without_valid_locator_is_rejected() -> None:
-    repeated = (
-        "Limitations: participants were not randomly selected for this study."
-    )
+    repeated = "Limitations: participants were not randomly selected for this study."
     doc = ExtractedDocument(
         "Repeated.pdf",
         "sha-repeated",
@@ -297,9 +294,11 @@ async def test_quote_found_on_multiple_pages_without_valid_locator_is_rejected()
 
     class AmbiguousAnalyst(FakeAnalyst):
         async def extract(self, snippets: SourceSnippets) -> tuple[ProposedFinding, ...]:
-            return (ProposedFinding(
-                LiteratureFacet.LIMITATIONS, "unknown", repeated, "Sampling limitation."
-            ),)
+            return (
+                ProposedFinding(
+                    LiteratureFacet.LIMITATIONS, "unknown", repeated, "Sampling limitation."
+                ),
+            )
 
     result = await ExtractLiteratureProfile(AmbiguousAnalyst()).execute(doc)
     field = result.findings[-1]
@@ -312,16 +311,18 @@ async def test_quote_found_on_multiple_pages_without_valid_locator_is_rejected()
 async def test_incomplete_or_overlong_quotes_are_not_preserved() -> None:
     class MissingValueAnalyst(FakeAnalyst):
         async def extract(self, snippets: SourceSnippets) -> tuple[ProposedFinding, ...]:
-            return (ProposedFinding(
-                LiteratureFacet.METHOD, snippets[0].snippet_id,
-                "cross-sectional", None,
-            ),)
+            return (
+                ProposedFinding(
+                    LiteratureFacet.METHOD, snippets[0].snippet_id, "cross-sectional", None
+                ),
+            )
 
     result = await ExtractLiteratureProfile(MissingValueAnalyst()).execute(DOC)
     field = result.findings[1]
     assert field.status is FindingStatus.REJECTED_QUOTE
     assert field.rejection_reason is LiteratureRejectionReason.INCOMPLETE_EVIDENCE
     assert field.quote is None
+
 
 def test_literature_endpoint_requires_file(api_client: TestClient) -> None:
     response = api_client.post(
