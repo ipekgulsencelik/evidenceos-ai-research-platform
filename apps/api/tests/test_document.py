@@ -93,9 +93,7 @@ def test_claim_requires_valid_terms(claim: str) -> None:
 
 
 def test_real_pdf_text_is_extracted_with_page_number_and_hash() -> None:
-    raw = sample_pdf(
-        "Adolescent chatbot use was associated with emotional wellbeing in a study."
-    )
+    raw = sample_pdf("Adolescent chatbot use was associated with emotional wellbeing in a study.")
     document = PypdfTextExtractor().extract(raw, "C:\\fake\\study.pdf")
     assert document.title == "study.pdf"
     assert document.page_count == 1
@@ -148,9 +146,15 @@ def api_client() -> Iterator[TestClient]:
 def test_pdf_upload_endpoint_returns_ranked_candidates(api_client: TestClient) -> None:
     result = api_client.post(
         "/api/v1/documents/retrieve-passages",
-        files={"file": ("my-study.pdf", sample_pdf(
-            "Adolescent chatbot use was associated with emotional wellbeing in a study."
-        ), "application/pdf")},
+        files={
+            "file": (
+                "my-study.pdf",
+                sample_pdf(
+                    "Adolescent chatbot use was associated with emotional wellbeing in a study."
+                ),
+                "application/pdf",
+            )
+        },
         data={"claim": "Chatbot use affects adolescent emotional wellbeing"},
     )
     assert result.status_code == 200, result.text
