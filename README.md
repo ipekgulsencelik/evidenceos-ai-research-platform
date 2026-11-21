@@ -83,3 +83,12 @@ The six-field extraction matrix now has search, field/status filters,
 page-grounded quote status explanations and separate reviewer annotations,
 with safe CSV export. Model quotes that cannot be verified are not displayed
 as evidence. See docs/literature-review-quality.md.
+
+
+## Research Workspace & Literature Management
+
+Academic projects can now persist server-generated literature analyses and
+append-only reviewer revisions in PostgreSQL. PDF binaries are not saved.
+Requires the additive 0002 Alembic migration (Docker Compose handles it).
+This is localhost-only: no authentication or access control. See
+docs/research-workspace.md for workflow, privacy limits and API contracts.
