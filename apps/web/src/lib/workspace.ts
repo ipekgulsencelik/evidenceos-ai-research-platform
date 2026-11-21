@@ -1,5 +1,6 @@
 /** Typed, minimal browser contracts for the localhost-only persistent workspace. */
 
+import { isLiteratureProfile } from "./literature";
 import type { HumanReview, LiteratureProfile } from "./literature";
 
 export interface ResearchProject {
@@ -48,18 +49,9 @@ export function isSavedLiteratureEntry(value: unknown): value is SavedLiterature
   return typeof entry.id === "string" && isUuid(entry.id)
     && typeof entry.project_id === "string" && isUuid(entry.project_id)
     && typeof entry.created_at === "string"
-    && isLiteratureProfileShape(entry.profile);
+    && isLiteratureProfile(entry.profile);
 }
 
-function isLiteratureProfileShape(value: unknown): value is LiteratureProfile {
-  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
-  const report = value as Partial<LiteratureProfile>;
-  return typeof report.sha256 === "string" && /^[0-9a-f]{64}$/i.test(report.sha256)
-    && typeof report.document_title === "string"
-    && typeof report.page_count === "number"
-    && Array.isArray(report.findings)
-    && report.findings.length === 6;
-}
 
 export function isReviewRevision(value: unknown): value is ReviewRevision {
   if (!value || typeof value !== "object" || Array.isArray(value)) return false;
