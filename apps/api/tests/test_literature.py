@@ -31,6 +31,9 @@ from evidenceos.presentation.api.routes.literature import (
     get_pdf_extractor,
 )
 
+type SourceSnippets = tuple[LiteratureSnippet, ...]
+
+
 DOC = ExtractedDocument(
     "Test paper.pdf",
     "abcdef1234567890",
@@ -106,7 +109,7 @@ async def test_hallucinated_quote_is_discarded_with_value() -> None:
 @pytest.mark.asyncio
 async def test_all_null_model_fields_are_not_identified() -> None:
     class NullAnalyst(FakeAnalyst):
-        async def extract(self, snippets: tuple[LiteratureSnippet, ...]) -> tuple[ProposedFinding, ...]:
+        async def extract(self, snippets: SourceSnippets) -> tuple[ProposedFinding, ...]:
             return (ProposedFinding(LiteratureFacet.METHOD, None, None, None),)
 
     result = await ExtractLiteratureProfile(NullAnalyst()).execute(DOC)
@@ -116,7 +119,7 @@ async def test_all_null_model_fields_are_not_identified() -> None:
 @pytest.mark.asyncio
 async def test_duplicate_model_field_does_not_override_a_quote() -> None:
     class DuplicateAnalyst(FakeAnalyst):
-        async def extract(self, snippets: tuple[LiteratureSnippet, ...]) -> tuple[ProposedFinding, ...]:
+        async def extract(self, snippets: SourceSnippets) -> tuple[ProposedFinding, ...]:
             x = await super().extract(snippets)
             return x + x
 
