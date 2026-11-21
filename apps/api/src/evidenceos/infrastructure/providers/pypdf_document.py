@@ -3,7 +3,6 @@
 import hashlib
 import io
 import re
-from pathlib import PurePath
 
 from pypdf import PdfReader
 from pypdf.errors import PdfReadError
