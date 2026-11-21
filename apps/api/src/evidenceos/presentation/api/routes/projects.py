@@ -10,6 +10,7 @@ from evidenceos.application.use_cases.projects import (
     CreateProjectCommand,
     GetProject,
 )
+from evidenceos.application.use_cases.workspace import ListResearchProjects
 from evidenceos.domain.ports.repositories import UnitOfWorkFactory
 from evidenceos.presentation.api.dependencies import get_uow_factory
 from evidenceos.presentation.api.schemas import CreateProjectRequest, ProjectResponse
@@ -35,3 +36,11 @@ async def get_project(
 ) -> ProjectResponse:
     project = await GetProject(uow_factory).execute(project_id)
     return ProjectResponse.from_entity(project)
+
+
+@router.get("", response_model=list[ProjectResponse])
+async def list_projects(
+    uow_factory: Annotated[UnitOfWorkFactory, Depends(get_uow_factory)],
+) -> list[ProjectResponse]:
+    projects = await ListResearchProjects(uow_factory).execute()
+    return [ProjectResponse.from_entity(project) for project in projects]

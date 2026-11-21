@@ -19,6 +19,8 @@ from evidenceos.domain.errors import (
     AcademicProviderError,
     InvalidDoi,
     InvalidProjectTitle,
+    InvalidResearchWorkspace,
+    LiteratureEntryNotFound,
     InvalidSearchQuery,
     ProjectNotFound,
 )
@@ -34,6 +36,7 @@ from evidenceos.presentation.api.routes.evidence import router as evidence_route
 from evidenceos.presentation.api.routes.health import router as health_router
 from evidenceos.presentation.api.routes.literature import router as literature_router
 from evidenceos.presentation.api.routes.projects import router as projects_router
+from evidenceos.presentation.api.routes.workspace import router as workspace_router
 
 
 class RequestIdMiddleware(BaseHTTPMiddleware):
@@ -81,6 +84,18 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     @app.exception_handler(ProjectNotFound)
     async def handle_not_found(request: Request, exc: ProjectNotFound) -> JSONResponse:
         return JSONResponse(status_code=404, content={"detail": str(exc)})
+
+    @app.exception_handler(LiteratureEntryNotFound)
+    async def handle_missing_literature(
+        request: Request, exc: LiteratureEntryNotFound
+    ) -> JSONResponse:
+        return JSONResponse(status_code=404, content={"detail": str(exc)})
+
+    @app.exception_handler(InvalidResearchWorkspace)
+    async def handle_invalid_workspace(
+        request: Request, exc: InvalidResearchWorkspace
+    ) -> JSONResponse:
+        return JSONResponse(status_code=422, content={"detail": str(exc)})
 
     @app.exception_handler(InvalidProjectTitle)
     async def handle_invalid_title(request: Request, exc: InvalidProjectTitle) -> JSONResponse:
@@ -132,6 +147,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(academic_router, prefix="/api/v1")
     app.include_router(health_router, prefix="/api/v1")
     app.include_router(projects_router, prefix="/api/v1")
+    app.include_router(workspace_router, prefix="/api/v1")
     return app
 
 

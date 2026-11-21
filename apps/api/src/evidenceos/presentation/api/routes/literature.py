@@ -6,6 +6,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
 
 from evidenceos.application.use_cases.literature import ExtractLiteratureProfile
+from evidenceos.domain.entities.literature import LiteratureProfile
 from evidenceos.domain.ports.document import DocumentTextExtractor
 from evidenceos.domain.ports.literature import LiteratureAnalyst
 from evidenceos.infrastructure.providers.groq_literature import GroqLiteratureAnalyst
@@ -31,14 +32,13 @@ def get_pdf_extractor() -> DocumentTextExtractor:
     return PypdfTextExtractor()
 
 
-@router.post("/analyze-pdf", response_model=LiteratureProfileResponse)
-async def analyze_pdf(
+async def extract_pdf_profile(
     request: Request,
-    file: Annotated[UploadFile, File()],
-    share_excerpts_with_ai: Annotated[bool, Form()],
-    extractor: Annotated[DocumentTextExtractor, Depends(get_pdf_extractor)],
-    analyst: Annotated[LiteratureAnalyst, Depends(get_literature_analyst)],
-) -> LiteratureProfileResponse:
+    file: UploadFile,
+    share_excerpts_with_ai: bool,
+    extractor: DocumentTextExtractor,
+    analyst: LiteratureAnalyst,
+) -> LiteratureProfile:
     if not share_excerpts_with_ai:
         raise HTTPException(
             status_code=422,
@@ -52,5 +52,18 @@ async def analyze_pdf(
     finally:
         await file.close()
     document = await asyncio.to_thread(extractor.extract, data, file.filename or "")
-    profile = await ExtractLiteratureProfile(analyst).execute(document)
+    return await ExtractLiteratureProfile(analyst).execute(document)
+
+
+@router.post("/analyze-pdf", response_model=LiteratureProfileResponse)
+async def analyze_pdf(
+    request: Request,
+    file: Annotated[UploadFile, File()],
+    share_excerpts_with_ai: Annotated[bool, Form()],
+    extractor: Annotated[DocumentTextExtractor, Depends(get_pdf_extractor)],
+    analyst: Annotated[LiteratureAnalyst, Depends(get_literature_analyst)],
+) -> LiteratureProfileResponse:
+    profile = await extract_pdf_profile(
+        request, file, share_excerpts_with_ai, extractor, analyst
+    )
     return LiteratureProfileResponse.from_entity(profile)
