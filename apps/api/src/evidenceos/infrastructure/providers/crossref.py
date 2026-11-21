@@ -18,7 +18,12 @@ class CrossrefCitationAdapter:
 
     async def lookup(self, doi: str) -> CitationMetadata | None:
         params = {"mailto": self._contact_email} if self._contact_email else None
-        headers = {"User-Agent": "EvidenceOS/0.2 (+https://github.com/ipekgulsencelik/evidenceos-ai-research-platform)"}
+        headers = {
+            "User-Agent": (
+                "EvidenceOS/0.2 "
+                "(+https://github.com/ipekgulsencelik/evidenceos-ai-research-platform)"
+            )
+        }
         try:
             response = await self._client.get(
                 self.BASE_URL + quote(doi, safe=""), params=params, headers=headers

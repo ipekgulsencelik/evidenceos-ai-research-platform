@@ -1,5 +1,6 @@
 """OpenAlex metadata search; explicit upstream failures are not empty searches."""
 
+from contextlib import suppress
 from typing import Any
 
 import httpx
@@ -42,10 +43,8 @@ class OpenAlexSearchAdapter:
         raw_doi = item.get("doi")
         doi = None
         if isinstance(raw_doi, str):
-            try:
+            with suppress(InvalidDoi):
                 doi = normalize_doi(raw_doi)
-            except InvalidDoi:
-                pass
         authorships = item.get("authorships") or []
         if not isinstance(authorships, list):
             authorships = []
