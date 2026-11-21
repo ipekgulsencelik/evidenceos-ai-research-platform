@@ -1,188 +1,60 @@
-# EvidenceOS — Phase 1 Project Foundation
+# EvidenceOS — Research Intelligence Platform
 
-[![CI](https://img.shields.io/badge/CI-configured-blue)](#quality-gates)
-
-An evidence-first platform for academic and legal research. **This repository is
-an infrastructure and domain foundation, not yet a functioning research/LLM
-product.** Academic connectors, legal retrieval, claim verification and the
-Next.js UI are upcoming phases.
+EvidenceOS combines source-backed academic research and DOI bibliographic checking. **The current implementation includes a functional academic search API and a web workspace.** Legal research, full-text scientific claim verification, and advanced AI analysis are future work.
 
 ## Stack
 
-Python 3.12, uv, FastAPI, Pydantic Settings, SQLAlchemy 2 async, PostgreSQL 16,
-Alembic, Pytest, Ruff, mypy, Docker Compose, GitHub Actions.
+Python 3.12 / FastAPI / SQLAlchemy / PostgreSQL / Alembic / uv, Next.js 16 / React 19 / TypeScript / Tailwind CSS 4, Docker Compose, GitHub Actions, Ruff, mypy, pytest, Node unit tests.
 
-## Quick start (Windows PowerShell / macOS / Linux)
+## Start locally on Windows (Docker Desktop)
 
-Requirements: Docker Desktop or Docker Engine with Compose.
+From repository root:
 
-```bash
-cp .env.example .env        # PowerShell: Copy-Item .env.example .env
+```powershell
+Copy-Item .env.example .env # only if .env is not already present; preserves your existing OpenAlex key
+# Edit .env and set EVIDENCEOS_OPENALEX_API_KEY using https://openalex.org/settings/api
 docker compose up --build -d
 docker compose ps
 ```
 
-The Docker API is exposed only on **127.0.0.1:8001** by default. The container still listens on port 8000. Set `EVIDENCEOS_API_HOST_PORT` in the root `.env` if 8001 is occupied. PostgreSQL is internal to the Docker network. Test via:
+- **Research UI:** http://localhost:3001
+- **FastAPI Swagger:** http://localhost:8001/docs
+- API liveness: http://localhost:8001/api/v1/health/live
 
-```bash
-curl http://localhost:8001/api/v1/health/live
-curl http://localhost:8001/api/v1/health/ready
-```
+Host ports may already be used by other projects. Change `EVIDENCEOS_WEB_HOST_PORT=3002` or `EVIDENCEOS_API_HOST_PORT=8002` in root `.env` if necessary, then run `docker compose up -d --force-recreate web api`. The API container always uses port 8000 internally and the web container port 3000. PostgreSQL is not exposed to the host; Docker services connect to `db:5432`.
 
-On PowerShell, use `Invoke-RestMethod` or `curl.exe`. For example:
+**IMPORTANT:** Do not overwrite your existing `.env` if it contains your working OpenAlex key. Never commit `.env`. Do not use `docker compose down -v` unless you intend to delete the database volume.
 
-```powershell
-Invoke-RestMethod http://localhost:8001/api/v1/health/live
-Invoke-RestMethod -Method Post http://localhost:8001/api/v1/projects `
-  -ContentType 'application/json' `
-  -Body '{"title":"AI in adolescents","domain":"academic"}'
-```
+## Web app
 
-For development only, OpenAPI interactive docs: http://localhost:8001/docs
+`apps/web/` is a Next.js App Router UI with two implemented features:
 
-Stop and clean:
+1. OpenAlex academic search with up to 25 results, author/year/DOI/source metadata.
+2. Crossref DOI metadata validation, including exact title comparisons and unverified/mismatch states.
 
-```bash
-docker compose down        # preserves DB volume
-docker compose down -v     # deletes all local database data!
-```
-
-**Security:** The example uses local-only credentials. Change the password,
-never commit `.env`, and **do not expose to the Internet**: authentication,
-authorization, rate limiting, secure ingress and tenant isolation are not part
-of this first commit. URL-encode any special characters in a database password.
-
-### Windows quick setup
-
-From PowerShell in the repository root:
-
-```powershell
-.\scripts\first-run.ps1
-```
-
-With Python/uv available, the local quality commands are packaged in
-`.\scripts\check.ps1` (requires dependency downloads at least once).
-
-## Development with uv
-
-```bash
-cd apps/api
-uv python install 3.12
-uv sync
-uv run ruff check .
-uv run ruff format --check .
-uv run mypy
-uv run pytest -q --cov=evidenceos --cov-report=term-missing
-```
-
-To run API locally alongside just PostgreSQL in Docker:
-
-```bash
-# from repository root
-cp .env.example .env
-docker compose up -d db
-cd apps/api
-# configure EVIDENCEOS_DATABASE_URL using a local env, or set in shell
-uv run alembic upgrade head
-uv run uvicorn evidenceos.presentation.api.app:app --reload
-```
-
-Environment variables are read from the **working directory** (`apps/api` when
-using `uv run`), so either export `EVIDENCEOS_DATABASE_URL` there or create a
-private `apps/api/.env` with the same settings. Both `.env` locations are ignored
-by Git. A database migration is required before creating projects.
+The UI uses Next.js same-origin API routes to proxy to FastAPI, so browser code never sees API credentials or the private Docker API hostname. Set `BACKEND_API_URL` **server-side only** for local Next.js development (Docker sets it automatically to `http://api:8000`). See [`apps/web/README.md`](apps/web/README.md).
 
 ## API endpoints
 
-| Method | Route | Purpose |
+| Method | Route | Function |
 |---|---|---|
-| GET | `/api/v1/health/live` | Process liveness; no DB round trip |
-| GET | `/api/v1/health/ready` | DB readiness (`SELECT 1`) |
-| POST | `/api/v1/projects` | Create academic/legal research project |
-| GET | `/api/v1/projects/{id}` | Retrieve a project by UUID |
+| GET | `/api/v1/health/live` | API process liveness |
+| GET | `/api/v1/health/ready` | Database readiness |
+| POST | `/api/v1/projects` | Create project |
+| GET | `/api/v1/projects/{id}` | Read project |
+| GET | `/api/v1/academic/works?query=...&limit=10` | OpenAlex metadata search |
+| POST | `/api/v1/academic/citations/verify` | Crossref DOI metadata comparison |
 
-Example:
+A `verified` DOI status means Crossref has matching bibliographic metadata, **not** that a paper's claims are valid. `not_found_in_crossref` does not rule out another DOI registration agency.
 
-```bash
-curl -X POST http://localhost:8001/api/v1/projects \
-  -H 'Content-Type: application/json' \
-  -d '{"title":"Legal research","domain":"legal"}'
-```
+## Quality and architecture
 
-## Quality gates
+The backend uses Clean Architecture: `domain <- application <- presentation` with the infrastructure adapters implementing domain ports and dependency composition at the API edge. The web application has separate typed API contracts, validation, route handlers, components, and server-side outbound communication.
 
-CI runs lint, formatting, strict mypy, unit/API/in-memory adapter tests with
-coverage, an actual PostgreSQL migration+integration test, and Docker build.
-The optional PostgreSQL test runs automatically in CI, but skips without an
-explicit `EVIDENCEOS_TEST_DATABASE_URL`. Use a disposable test database only;
-never point it at production data.
+GitHub Actions runs backend lint, strict typing, coverage, PostgreSQL integration, frontend TypeScript/tests/build, and container builds.
 
-```bash
-cd apps/api
-uv run pytest -q
-```
+## Operational and security limitations
 
-`uv.lock` is checked in. `uv sync` prevents drift between the declared
-dependencies and the lockfile (see https://docs.astral.sh/uv/concepts/projects/sync/).
+This software is an **early-stage development system**. It does not yet include authentication, authorization, RBAC, tenant isolation, public rate limiting, security reviews, audit logs, or legal counsel signoff. **Do not publish the web or API service to the internet or process sensitive customer data.** Web and API host ports bind to `127.0.0.1` for local use. OpenAlex and Crossref are external dependencies whose data access and usage terms must be respected.
 
-## Architecture
-
-```text
-apps/api/src/evidenceos/
-  domain/              # pure entities, business rules and UoW/repository ports
-  application/         # use cases, no framework or storage coupling
-  infrastructure/      # PostgreSQL persistence and validated configuration
-  presentation/api/    # FastAPI composition, dependency wiring, HTTP schemas
-```
-
-See [`docs/architecture`](docs/architecture/README.md) and
-[`docs/adr`](docs/adr/0001-modular-monolith.md).
-
-## Roadmap
-
-1. **Included in foundation:** research project aggregate, transactional
-   repository adapter, migrations, health/ready endpoints, typed configuration,
-   Docker setup, CI, tests, documentation.
-2. **Next:** OpenAlex search adapter and Crossref metadata verification with
-   provenance and API contract tests.
-3. **Then:** permissioned PDF parsing, evidence extraction and claim checking.
-4. **Later:** legal sources, time-aware laws and judgment verification,
-   identity/RBAC, multi-tenant security and production hardening.
-
-## Scope and reliability
-
-No claims of production readiness are made for this repository; it is
-**production-oriented scaffolding** and requires threat modeling, secure
-identity, load testing, observability, and operational review before deployment.
-
-
-## Phase 1.1 — Academic Research Engine
-
-EvidenceOS now has provider-neutral academic metadata workflows:
-
-- `GET /api/v1/academic/works?query=artificial%20intelligence&limit=10` searches OpenAlex.
-- `POST /api/v1/academic/citations/verify` with JSON
-  `{"doi":"10.1000/xyz","expected_title":"Article title"}` retrieves Crossref metadata.
-- Citation statuses: `verified`, `title_mismatch`, `not_found_in_crossref`.
-  **Verified only means the DOI metadata exists and an optional title matches**;
-  it does *not* mean an article supports an argument or that a DOI is valid across
-  all registration agencies when Crossref does not have it.
-- `502` indicates an upstream failure; `503` is returned when the OpenAlex key
-  is not configured. Errors are never silently reported as empty results.
-
-### Configuration
-
-Get an OpenAlex API key from https://openalex.org/settings/api and set
-`EVIDENCEOS_OPENALEX_API_KEY` in your local `.env`. This key is never checked in.
-Set `EVIDENCEOS_CROSSREF_CONTACT_EMAIL` to identify your project for Crossref's
-polite API pool. Both providers are called via HTTPS and are covered by offline
-mock-transport tests. The search feature requires an active Internet connection.
-
-### Architectural boundary
-
-`domain/ports/academic.py` defines academic search and citation metadata
-interfaces. Use cases depend only on these ports. OpenAlex and Crossref adapters
-live in `infrastructure/providers`; FastAPI dependency functions are the
-composition root. Legal research and full-text claim verification are not yet
-implemented. Authentication, rate limiting, and audit logging are required
-before exposing a public deployment.
+Development dependencies are declared in `package.json`; a checked-in npm lockfile is still a hardening task. Do not claim reproducible dependency resolution until `package-lock.json` is committed.

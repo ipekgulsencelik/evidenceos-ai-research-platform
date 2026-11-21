@@ -64,9 +64,30 @@ jobs:
       - name: PostgreSQL tests
         run: uv run pytest tests/test_postgres.py
 
+  web:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: apps/web/package.json
+      - name: Install web dependencies
+        run: npm install --no-audit --no-fund
+      - name: Check TypeScript and unit tests
+        run: npm run check
+      - name: Build Next.js application
+        run: npm run build
+
   docker:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - name: Build API image
         run: docker build -t evidenceos-api:ci apps/api
+      - name: Build Web image
+        run: docker build -t evidenceos-web:ci apps/web
