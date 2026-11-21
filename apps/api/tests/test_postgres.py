@@ -49,7 +49,6 @@ async def test_postgres_write_read_in_real_database() -> None:
         await engine.dispose()
 
 
-
 @pytest.mark.integration
 @pytest.mark.asyncio
 async def test_postgres_literature_snapshots_and_audit_history() -> None:
@@ -74,8 +73,12 @@ async def test_postgres_literature_snapshots_and_audit_history() -> None:
 
         revision = await SaveReviewRevision(make_uow).execute(
             SaveReviewCommand(
-                project.id, entry.id, LiteratureFacet.LIMITATIONS,
-                "Verify the sample", "Original PDF should be checked", True,
+                project.id,
+                entry.id,
+                LiteratureFacet.LIMITATIONS,
+                "Verify the sample",
+                "Original PDF should be checked",
+                True,
             )
         )
         historical = await ListReviewRevisions(make_uow).execute(project.id, entry.id)
