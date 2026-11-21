@@ -32,6 +32,7 @@ from evidenceos.presentation.api.routes.academic import router as academic_route
 from evidenceos.presentation.api.routes.document import router as document_router
 from evidenceos.presentation.api.routes.evidence import router as evidence_router
 from evidenceos.presentation.api.routes.health import router as health_router
+from evidenceos.presentation.api.routes.literature import router as literature_router
 from evidenceos.presentation.api.routes.projects import router as projects_router
 
 
@@ -125,6 +126,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     async def handle_document_input(request: Request, exc: ValueError) -> JSONResponse:
         return JSONResponse(status_code=422, content={"detail": str(exc)})
 
+    app.include_router(literature_router, prefix="/api/v1")
     app.include_router(document_router, prefix="/api/v1")
     app.include_router(evidence_router, prefix="/api/v1")
     app.include_router(academic_router, prefix="/api/v1")
