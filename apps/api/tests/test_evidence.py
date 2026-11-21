@@ -55,6 +55,7 @@ async def test_grounded_claim_retains_source_locator() -> None:
     )
     assert report.model == "test"
     assert report.rows[0].verdict is EvidenceVerdict.SUPPORTS
+    assert report.rows[0].quote is not None
     assert report.rows[0].quote in SOURCE.passage
     assert report.rows[0].locator == "Results"
 
@@ -156,6 +157,7 @@ def test_evidence_http_endpoint(client: TestClient) -> None:
         },
     )
     assert response.status_code == 200
+    assert isinstance(response.json()["rows"][0]["quote"], str)
     assert response.json()["rows"][0]["quote"] in SOURCE.passage
     assert "Human review" in response.json()["caveat"]
 
