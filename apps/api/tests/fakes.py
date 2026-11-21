@@ -28,35 +28,6 @@ class FakeProjectRepository:
         self._pending.clear()
 
 
-class FakeUnitOfWork:
-    def __init__(self, store: dict[UUID, ResearchProject]) -> None:
-        self._projects = FakeProjectRepository(store)
-        self.committed = False
-        self._literature = FakeLiteratureRepository()
-
-    @property
-    def projects(self) -> ProjectRepository:
-        return self._projects
-
-    @property
-    def literature(self) -> LiteratureRepository:
-        return self._literature
-
-    async def __aenter__(self) -> "FakeUnitOfWork":
-        return self
-
-    async def __aexit__(
-        self,
-        exc_type: type[BaseException] | None,
-        exc_value: BaseException | None,
-        traceback: TracebackType | None,
-    ) -> None:
-        return None
-
-    async def commit(self) -> None:
-        self._projects.flush()
-        self.committed = True
-
 
 class FakeLiteratureRepository:
     def __init__(self) -> None:
@@ -84,3 +55,38 @@ class FakeLiteratureRepository:
             revision for revision in reversed(self.reviews)
             if revision.entry_id == entry_id
         ][:limit]
+
+
+class FakeUnitOfWork:
+    def __init__(
+        self,
+        store: dict[UUID, ResearchProject],
+        literature: FakeLiteratureRepository | None = None,
+    ) -> None:
+        self._projects = FakeProjectRepository(store)
+        self.committed = False
+        self._literature = literature if literature is not None else FakeLiteratureRepository()
+
+    @property
+    def projects(self) -> ProjectRepository:
+        return self._projects
+
+    @property
+    def literature(self) -> LiteratureRepository:
+        return self._literature
+
+    async def __aenter__(self) -> "FakeUnitOfWork":
+        return self
+
+    async def __aexit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_value: BaseException | None,
+        traceback: TracebackType | None,
+    ) -> None:
+        return None
+
+    async def commit(self) -> None:
+        self._projects.flush()
+        self.committed = True
+
