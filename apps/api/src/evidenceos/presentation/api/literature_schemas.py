@@ -6,6 +6,7 @@ from evidenceos.domain.entities.literature import (
     FindingStatus,
     LiteratureFacet,
     LiteratureProfile,
+    LiteratureRejectionReason,
 )
 
 
@@ -15,6 +16,8 @@ class LiteratureFindingResponse(BaseModel):
     value: str | None
     quote: str | None
     locator: str | None
+    rejection_reason: LiteratureRejectionReason | None = None
+    locator_repaired: bool = False
 
 
 class LiteratureProfileResponse(BaseModel):
@@ -41,6 +44,8 @@ class LiteratureProfileResponse(BaseModel):
                     value=field.value,
                     quote=field.quote,
                     locator=field.locator,
+                    rejection_reason=field.rejection_reason,
+                    locator_repaired=field.locator_repaired,
                 )
                 for field in value.findings
             ],

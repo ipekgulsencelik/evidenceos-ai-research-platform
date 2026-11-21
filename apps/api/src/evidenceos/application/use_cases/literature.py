@@ -7,6 +7,7 @@ from evidenceos.domain.entities.literature import (
     LiteratureFacet,
     LiteratureFinding,
     LiteratureProfile,
+    LiteratureRejectionReason,
     LiteratureSnippet,
     ProposedFinding,
 )
@@ -129,6 +130,76 @@ def collect_snippets(document: ExtractedDocument) -> tuple[LiteratureSnippet, ..
     return tuple(chosen[key] for key in sorted(chosen))
 
 
+def _review_proposal(
+    facet: LiteratureFacet,
+    candidates: list[ProposedFinding],
+    available: dict[str, LiteratureSnippet],
+) -> LiteratureFinding:
+    """Fail closed; never preserve an unsupported value or made-up quotation."""
+    if not candidates or (
+        len(candidates) == 1
+        and candidates[0].value is None
+        and candidates[0].quote is None
+        and candidates[0].snippet_id is None
+    ):
+        return LiteratureFinding(facet, FindingStatus.NOT_IDENTIFIED, None, None, None)
+    if len(candidates) != 1:
+        return LiteratureFinding(
+            facet,
+            FindingStatus.REJECTED_QUOTE,
+            None,
+            None,
+            None,
+            LiteratureRejectionReason.DUPLICATE_FIELD,
+        )
+
+    proposal = candidates[0]
+    if proposal.value is None or proposal.quote is None:
+        return LiteratureFinding(
+            facet,
+            FindingStatus.REJECTED_QUOTE,
+            None,
+            None,
+            None,
+            LiteratureRejectionReason.INCOMPLETE_EVIDENCE,
+        )
+    value = proposal.value.strip()
+    quote = proposal.quote.strip()
+    if not 1 <= len(value) <= 500 or not 5 <= len(quote) <= 600:
+        return LiteratureFinding(
+            facet,
+            FindingStatus.REJECTED_QUOTE,
+            None,
+            None,
+            None,
+            LiteratureRejectionReason.INVALID_LENGTH,
+        )
+
+    specified = available.get(proposal.snippet_id or "")
+    if specified is not None and quote in specified.passage:
+        return LiteratureFinding(
+            facet, FindingStatus.GROUNDED, value, quote, specified.locator
+        )
+
+    # The model may reference the wrong snippet ID. Only recover an exact quote
+    # when all matched source snippets point to the SAME PDF page. Never guess.
+    matching = {source.locator for source in available.values() if quote in source.passage}
+    if not matching:
+        reason = LiteratureRejectionReason.QUOTE_NOT_FOUND
+    elif len(matching) > 1:
+        reason = LiteratureRejectionReason.AMBIGUOUS_LOCATION
+    else:
+        return LiteratureFinding(
+            facet,
+            FindingStatus.GROUNDED,
+            value,
+            quote,
+            next(iter(matching)),
+            locator_repaired=True,
+        )
+    return LiteratureFinding(facet, FindingStatus.REJECTED_QUOTE, None, None, None, reason)
+
+
 class ExtractLiteratureProfile:
     def __init__(self, analyst: LiteratureAnalyst) -> None:
         self._analyst = analyst
@@ -141,40 +212,10 @@ class ExtractLiteratureProfile:
         for proposal in proposals:
             grouped.setdefault(proposal.facet, []).append(proposal)
 
-        findings: list[LiteratureFinding] = []
-        for facet in FACET_ORDER:
-            candidates = grouped.get(facet, [])
-            if not candidates or (
-                len(candidates) == 1 and candidates[0].value is None and candidates[0].quote is None
-            ):
-                findings.append(
-                    LiteratureFinding(facet, FindingStatus.NOT_IDENTIFIED, None, None, None)
-                )
-                continue
-            if len(candidates) != 1:
-                findings.append(
-                    LiteratureFinding(facet, FindingStatus.REJECTED_QUOTE, None, None, None)
-                )
-                continue
-            proposal = candidates[0]
-            snippet = available.get(proposal.snippet_id or "")
-            quote = proposal.quote
-            value = proposal.value
-            if (
-                snippet is None
-                or quote is None
-                or value is None
-                or not 5 <= len(quote) <= 600
-                or not 1 <= len(value) <= 500
-                or quote not in snippet.passage
-            ):
-                findings.append(
-                    LiteratureFinding(facet, FindingStatus.REJECTED_QUOTE, None, None, None)
-                )
-                continue
-            findings.append(
-                LiteratureFinding(facet, FindingStatus.GROUNDED, value, quote, snippet.locator)
-            )
+        findings = [
+            _review_proposal(facet, grouped.get(facet, []), available)
+            for facet in FACET_ORDER
+        ]
 
         return LiteratureProfile(
             document_title=document.title,
@@ -185,7 +226,8 @@ class ExtractLiteratureProfile:
             findings=tuple(findings),
             caveat=(
                 "Preliminary AI interpretation of selected PDF excerpts only. "
-                "A verbatim quote is checked against extracted text, but the interpretation, "
+                "Quotations are checked against selected PDF excerpts; recovered locators " 
+                "are marked. The interpretation, "
                 "research methodology and original PDF must be verified by a human. "
                 "Not identified means not found in the selected excerpts, not absent "
                 "from the paper. This is not systematic review data extraction."

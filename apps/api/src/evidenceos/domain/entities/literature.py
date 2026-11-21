@@ -22,6 +22,14 @@ class FindingStatus(StrEnum):
     REJECTED_QUOTE = "rejected_quote"
 
 
+class LiteratureRejectionReason(StrEnum):
+    DUPLICATE_FIELD = "duplicate_field"
+    INCOMPLETE_EVIDENCE = "incomplete_evidence"
+    QUOTE_NOT_FOUND = "quote_not_found"
+    AMBIGUOUS_LOCATION = "ambiguous_location"
+    INVALID_LENGTH = "invalid_length"
+
+
 @dataclass(frozen=True, slots=True)
 class LiteratureSnippet:
     snippet_id: str
@@ -44,6 +52,8 @@ class LiteratureFinding:
     value: str | None
     quote: str | None
     locator: str | None
+    rejection_reason: LiteratureRejectionReason | None = None
+    locator_repaired: bool = False
 
 
 @dataclass(frozen=True, slots=True)

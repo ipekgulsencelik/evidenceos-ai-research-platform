@@ -17,6 +17,7 @@ from evidenceos.domain.entities.literature import (
     FindingStatus,
     LiteratureFacet,
     LiteratureSnippet,
+    LiteratureRejectionReason,
     ProposedFinding,
 )
 from evidenceos.infrastructure.config import Settings
@@ -126,6 +127,7 @@ async def test_duplicate_model_field_does_not_override_a_quote() -> None:
 
     result = await ExtractLiteratureProfile(DuplicateAnalyst()).execute(DOC)
     assert result.findings[0].status is FindingStatus.REJECTED_QUOTE
+    assert result.findings[0].rejection_reason is LiteratureRejectionReason.DUPLICATE_FIELD
 
 
 def test_snippet_selection_has_stable_source_loci_and_strict_limit() -> None:
@@ -245,6 +247,81 @@ def test_literature_endpoint_returns_source_grounded_fields(api_client: TestClie
     assert data["findings"][0]["status"] == "grounded"
     assert data["findings"][0]["locator"] == "PDF page 1"
 
+
+
+
+@pytest.mark.asyncio
+async def test_invalid_model_quote_has_explainable_reason() -> None:
+    result = await ExtractLiteratureProfile(BadQuoteAnalyst()).execute(DOC)
+    sample = next(item for item in result.findings if item.facet is LiteratureFacet.SAMPLE)
+    assert sample.rejection_reason is LiteratureRejectionReason.QUOTE_NOT_FOUND
+    assert sample.locator_repaired is False
+
+
+@pytest.mark.asyncio
+async def test_wrong_model_source_id_can_be_repaired_from_exact_pdf_quote() -> None:
+    class WrongSource(FakeAnalyst):
+        async def extract(self, snippets: SourceSnippets) -> tuple[ProposedFinding, ...]:
+            selected = next(x for x in snippets if x.locator == "PDF page 2")
+            return (
+                ProposedFinding(
+                    LiteratureFacet.LIMITATIONS,
+                    "model-made-up-ID",
+                    "Limitations: self-report data may be affected by response bias.",
+                    "Self-report was a limitation.",
+                ),
+            )
+
+    result = await ExtractLiteratureProfile(WrongSource()).execute(DOC)
+    finding = next(
+        item for item in result.findings if item.facet is LiteratureFacet.LIMITATIONS
+    )
+    assert finding.status is FindingStatus.GROUNDED
+    assert finding.quote in DOC.pages[1].text
+    assert finding.locator == "PDF page 2"
+    assert finding.locator_repaired is True
+    assert finding.rejection_reason is None
+
+
+@pytest.mark.asyncio
+async def test_quote_found_on_multiple_pages_without_valid_locator_is_rejected() -> None:
+    repeated = (
+        "Limitations: participants were not randomly selected for this study."
+    )
+    doc = ExtractedDocument(
+        "Repeated.pdf",
+        "sha-repeated",
+        2,
+        (DocumentPage(1, repeated), DocumentPage(2, repeated)),
+    )
+
+    class AmbiguousAnalyst(FakeAnalyst):
+        async def extract(self, snippets: SourceSnippets) -> tuple[ProposedFinding, ...]:
+            return (ProposedFinding(
+                LiteratureFacet.LIMITATIONS, "unknown", repeated, "Sampling limitation."
+            ),)
+
+    result = await ExtractLiteratureProfile(AmbiguousAnalyst()).execute(doc)
+    field = result.findings[-1]
+    assert field.status is FindingStatus.REJECTED_QUOTE
+    assert field.rejection_reason is LiteratureRejectionReason.AMBIGUOUS_LOCATION
+    assert field.value is None
+
+
+@pytest.mark.asyncio
+async def test_incomplete_or_overlong_quotes_are_not_preserved() -> None:
+    class MissingValueAnalyst(FakeAnalyst):
+        async def extract(self, snippets: SourceSnippets) -> tuple[ProposedFinding, ...]:
+            return (ProposedFinding(
+                LiteratureFacet.METHOD, snippets[0].snippet_id,
+                "cross-sectional", None,
+            ),)
+
+    result = await ExtractLiteratureProfile(MissingValueAnalyst()).execute(DOC)
+    field = result.findings[1]
+    assert field.status is FindingStatus.REJECTED_QUOTE
+    assert field.rejection_reason is LiteratureRejectionReason.INCOMPLETE_EVIDENCE
+    assert field.quote is None
 
 def test_literature_endpoint_requires_file(api_client: TestClient) -> None:
     response = api_client.post(
