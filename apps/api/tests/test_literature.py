@@ -56,9 +56,7 @@ class FakeAnalyst:
     def model_id(self) -> str:
         return "fake-analyst"
 
-    async def extract(
-        self, snippets: tuple[LiteratureSnippet, ...]
-    ) -> tuple[ProposedFinding, ...]:
+    async def extract(self, snippets: tuple[LiteratureSnippet, ...]) -> tuple[ProposedFinding, ...]:
         first = next(snippet for snippet in snippets if snippet.locator == "PDF page 1")
         return (
             ProposedFinding(
@@ -71,9 +69,7 @@ class FakeAnalyst:
 
 
 class BadQuoteAnalyst(FakeAnalyst):
-    async def extract(
-        self, snippets: tuple[LiteratureSnippet, ...]
-    ) -> tuple[ProposedFinding, ...]:
+    async def extract(self, snippets: tuple[LiteratureSnippet, ...]) -> tuple[ProposedFinding, ...]:
         return (
             ProposedFinding(
                 LiteratureFacet.SAMPLE,
@@ -110,9 +106,7 @@ async def test_hallucinated_quote_is_discarded_with_value() -> None:
 @pytest.mark.asyncio
 async def test_all_null_model_fields_are_not_identified() -> None:
     class NullAnalyst(FakeAnalyst):
-        async def extract(
-            self, snippets: tuple[LiteratureSnippet, ...]
-        ) -> tuple[ProposedFinding, ...]:
+        async def extract(self, snippets: tuple[LiteratureSnippet, ...]) -> tuple[ProposedFinding, ...]:
             return (ProposedFinding(LiteratureFacet.METHOD, None, None, None),)
 
     result = await ExtractLiteratureProfile(NullAnalyst()).execute(DOC)
@@ -122,9 +116,7 @@ async def test_all_null_model_fields_are_not_identified() -> None:
 @pytest.mark.asyncio
 async def test_duplicate_model_field_does_not_override_a_quote() -> None:
     class DuplicateAnalyst(FakeAnalyst):
-        async def extract(
-            self, snippets: tuple[LiteratureSnippet, ...]
-        ) -> tuple[ProposedFinding, ...]:
+        async def extract(self, snippets: tuple[LiteratureSnippet, ...]) -> tuple[ProposedFinding, ...]:
             x = await super().extract(snippets)
             return x + x
 
@@ -153,14 +145,22 @@ async def test_groq_adapter_parses_source_bounded_json() -> None:
             200,
             json={
                 "choices": [
-                    {"message": {"content": json.dumps({
-                        "fields": [{
-                            "field": "aim",
-                            "snippet_id": "p1-w1",
-                            "quote": "Objective: assess adolescents",
-                            "value": "Assess adolescents.",
-                        }]
-                    })}}
+                    {
+                        "message": {
+                            "content": json.dumps(
+                                {
+                                    "fields": [
+                                        {
+                                            "field": "aim",
+                                            "snippet_id": "p1-w1",
+                                            "quote": "Objective: assess adolescents",
+                                            "value": "Assess adolescents.",
+                                        }
+                                    ]
+                                }
+                            )
+                        }
+                    }
                 ]
             },
         )

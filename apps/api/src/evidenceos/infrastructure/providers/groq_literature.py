@@ -43,17 +43,14 @@ class GroqLiteratureAnalyst:
     def model_id(self) -> str:
         return self._model
 
-    async def extract(
-        self, snippets: tuple[LiteratureSnippet, ...]
-    ) -> tuple[ProposedFinding, ...]:
+    async def extract(self, snippets: tuple[LiteratureSnippet, ...]) -> tuple[ProposedFinding, ...]:
         if not self._api_key:
             raise EvidenceProviderUnavailable("Set EVIDENCEOS_GROQ_API_KEY to analyze literature")
         if not snippets:
             return ()
         payload = {
             "snippets": [
-                {"snippet_id": source.snippet_id, "text": source.passage}
-                for source in snippets
+                {"snippet_id": source.snippet_id, "text": source.passage} for source in snippets
             ]
         }
         try:
@@ -91,8 +88,10 @@ class GroqLiteratureAnalyst:
                     item.get("quote"),
                     item.get("value"),
                 )
-                if any(entry is not None and not isinstance(entry, str)
-                       for entry in (snippet_id, quote, value)):
+                if any(
+                    entry is not None and not isinstance(entry, str)
+                    for entry in (snippet_id, quote, value)
+                ):
                     raise ValueError("Invalid field types")
                 if (quote is not None and len(quote) > 600) or (
                     value is not None and len(value) > 500

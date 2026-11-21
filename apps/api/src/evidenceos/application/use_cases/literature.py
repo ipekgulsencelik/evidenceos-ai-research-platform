@@ -15,30 +15,73 @@ from evidenceos.domain.ports.literature import LiteratureAnalyst
 # Lexical selection is only a recall heuristic; never a relevance probability.
 _FACET_TERMS: dict[LiteratureFacet, tuple[str, ...]] = {
     LiteratureFacet.AIM: (
-        "aim", "objective", "purpose", "hypothesis", "goal", "amaç", "hedef",
+        "aim",
+        "objective",
+        "purpose",
+        "hypothesis",
+        "goal",
+        "amaç",
+        "hedef",
     ),
     LiteratureFacet.METHOD: (
-        "method", "design", "cross-sectional", "cohort", "randomized",
-        "trial", "qualitative", "yöntem", "tasarım", "kesitsel",
+        "method",
+        "design",
+        "cross-sectional",
+        "cohort",
+        "randomized",
+        "trial",
+        "qualitative",
+        "yöntem",
+        "tasarım",
+        "kesitsel",
     ),
     LiteratureFacet.SAMPLE: (
-        "participant", "sample", "recruit", "adolescent", "student",
-        "respondent", "örneklem", "katılımcı", "ergen",
+        "participant",
+        "sample",
+        "recruit",
+        "adolescent",
+        "student",
+        "respondent",
+        "örneklem",
+        "katılımcı",
+        "ergen",
     ),
     LiteratureFacet.INSTRUMENTS: (
-        "scale", "questionnaire", "survey", "instrument", "measure",
-        "inventory", "ölçek", "anket", "ölçeği", "envanter",
+        "scale",
+        "questionnaire",
+        "survey",
+        "instrument",
+        "measure",
+        "inventory",
+        "ölçek",
+        "anket",
+        "ölçeği",
+        "envanter",
     ),
     LiteratureFacet.FINDINGS: (
-        "result", "finding", "association", "significant", "effect",
-        "observed", "bulgu", "sonuç", "ilişki", "etki",
+        "result",
+        "finding",
+        "association",
+        "significant",
+        "effect",
+        "observed",
+        "bulgu",
+        "sonuç",
+        "ilişki",
+        "etki",
     ),
     LiteratureFacet.LIMITATIONS: (
-        "limitation", "limitation of", "bias", "caution", "constraint",
-        "sınırlılık", "kısıtlılık", "yanlılık", "sınırlı",
+        "limitation",
+        "limitation of",
+        "bias",
+        "caution",
+        "constraint",
+        "sınırlılık",
+        "kısıtlılık",
+        "yanlılık",
+        "sınırlı",
     ),
 }
-
 
 def _windows(text: str, width: int = 1150, overlap: int = 140) -> list[str]:
     windows: list[str] = []
@@ -101,9 +144,7 @@ class ExtractLiteratureProfile:
         for facet in FACET_ORDER:
             candidates = grouped.get(facet, [])
             if not candidates or (
-                len(candidates) == 1
-                and candidates[0].value is None
-                and candidates[0].quote is None
+                len(candidates) == 1 and candidates[0].value is None and candidates[0].quote is None
             ):
                 findings.append(
                     LiteratureFinding(facet, FindingStatus.NOT_IDENTIFIED, None, None, None)
