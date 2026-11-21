@@ -29,7 +29,8 @@ class OpenAlexSearchAdapter:
             if not isinstance(payload, dict) or not isinstance(payload.get("results"), list):
                 raise ValueError("Unexpected OpenAlex payload")
             return tuple(
-                work for entry in payload["results"]
+                work
+                for entry in payload["results"]
                 if isinstance(entry, dict) and (work := self._parse_work(entry)) is not None
             )
         except (httpx.HTTPError, ValueError, TypeError) as exc:
