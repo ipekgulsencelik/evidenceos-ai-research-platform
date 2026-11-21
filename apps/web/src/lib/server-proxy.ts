@@ -1,8 +1,9 @@
 /** Server-only outbound API transport. Browser clients never learn the backend URL. */
 import type { AcademicWork, CitationCheck } from "./academic";
 import type { EvidenceReport } from "./evidence";
+import type { PdfReview } from "./document";
 
-type BackendPayload = AcademicWork[] | CitationCheck | EvidenceReport;
+type BackendPayload = AcademicWork[] | CitationCheck | EvidenceReport | PdfReview;
 
 export interface GatewayResult {
   status: number;
@@ -20,7 +21,7 @@ export async function callBackend(path: string, init?: RequestInit): Promise<Gat
       ...init,
       headers: { Accept: "application/json", ...(init?.headers || {}) },
       cache: "no-store",
-      signal: AbortSignal.timeout(path === "/api/v1/evidence/assess" ? 90000 : 15000),
+      signal: AbortSignal.timeout(path === "/api/v1/evidence/assess" ? 90000 : 30000),
     });
     const payload: unknown = await upstream.json().catch(() => null);
     if (!payload || typeof payload !== "object") {
