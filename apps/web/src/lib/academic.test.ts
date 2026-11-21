@@ -43,7 +43,12 @@ test("citation request rejects malformed request data", () => {
     status: 400,
     detail: "Invalid JSON request.",
   });
-  for (const invalid of [0, false, {}, { doi: 123 }, { doi: "10.1016/test", expected_title: 123 }]) {
+  for (const malformed of [0, false]) {
+    const result = parseCitationBody(malformed);
+    assert.equal(result.ok, false);
+    if (!result.ok) assert.equal(result.status, 400);
+  }
+  for (const invalid of [{}, { doi: 123 }, { doi: "10.1016/test", expected_title: 123 }]) {
     const result = parseCitationBody(invalid);
     assert.equal(result.ok, false);
     if (!result.ok) assert.equal(result.status, 422);
