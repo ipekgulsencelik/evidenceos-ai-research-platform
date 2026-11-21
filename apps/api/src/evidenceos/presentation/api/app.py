@@ -12,6 +12,7 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 from starlette.responses import Response
 
+from evidenceos.application.use_cases.evidence import InvalidEvidenceInput
 from evidenceos.domain.errors import (
     AcademicConfigurationError,
     AcademicProviderError,
@@ -21,7 +22,6 @@ from evidenceos.domain.errors import (
     ProjectNotFound,
 )
 from evidenceos.infrastructure.config import Settings, get_settings
-from evidenceos.application.use_cases.evidence import InvalidEvidenceInput
 from evidenceos.infrastructure.providers.groq_evidence import (
     EvidenceProviderFailure,
     EvidenceProviderUnavailable,
