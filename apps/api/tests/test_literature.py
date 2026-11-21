@@ -93,6 +93,7 @@ async def test_extracts_page_grounded_facet_and_flags_missing() -> None:
     assert aim.facet is LiteratureFacet.AIM
     assert aim.status is FindingStatus.GROUNDED
     assert aim.locator == "PDF page 1"
+    assert aim.quote is not None
     assert aim.quote in DOC.pages[0].text
     assert all(item.status is FindingStatus.NOT_IDENTIFIED for item in result.findings[1:])
     assert "not absent from the paper" in result.caveat

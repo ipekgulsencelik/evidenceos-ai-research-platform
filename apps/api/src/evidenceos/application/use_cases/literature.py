@@ -105,25 +105,25 @@ def _windows(text: str, width: int = 1150, overlap: int = 140) -> list[str]:
 def collect_snippets(document: ExtractedDocument) -> tuple[LiteratureSnippet, ...]:
     """Select up to 12 literal PDF substrings with stable original PDF page references."""
     windows: list[tuple[int, int, str]] = []
-    for page in document.pages:
-        for i, text in enumerate(_windows(page.text), start=1):
+    for document_page in document.pages:
+        for i, text in enumerate(_windows(document_page.text), start=1):
             if len(text) >= 30:
-                windows.append((page.number, i, text))
+                windows.append((document_page.number, i, text))
 
     chosen: dict[str, LiteratureSnippet] = {}
     for facet in FACET_ORDER:
         ranked: list[tuple[int, int, int, str]] = []
-        for page, index, text in windows:
+        for page_number, index, text in windows:
             folded = text.casefold()
             matches = sum(term in folded for term in _FACET_TERMS[facet])
             if matches:
-                ranked.append((-matches, page, index, text))
+                ranked.append((-matches, page_number, index, text))
         ranked.sort(key=lambda item: (item[0], item[1], item[2]))
-        for _, page, index, passage in ranked[:2]:
-            snippet_id = f"p{page}-w{index}"
+        for _, page_number, index, passage in ranked[:2]:
+            snippet_id = f"p{page_number}-w{index}"
             chosen[snippet_id] = LiteratureSnippet(
                 snippet_id=snippet_id,
-                locator=f"PDF page {page}",
+                locator=f"PDF page {page_number}",
                 passage=passage,
             )
     return tuple(chosen[key] for key in sorted(chosen))
