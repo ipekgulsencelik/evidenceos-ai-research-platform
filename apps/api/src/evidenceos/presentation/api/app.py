@@ -12,6 +12,7 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 from starlette.responses import Response
 
+from evidenceos.application.use_cases.document import InvalidDocumentClaim
 from evidenceos.application.use_cases.evidence import InvalidEvidenceInput
 from evidenceos.domain.errors import (
     AcademicConfigurationError,
@@ -22,11 +23,13 @@ from evidenceos.domain.errors import (
     ProjectNotFound,
 )
 from evidenceos.infrastructure.config import Settings, get_settings
+from evidenceos.infrastructure.providers.pypdf_document import InvalidPdfDocument, PdfTooLarge
 from evidenceos.infrastructure.providers.groq_evidence import (
     EvidenceProviderFailure,
     EvidenceProviderUnavailable,
 )
 from evidenceos.presentation.api.routes.academic import router as academic_router
+from evidenceos.presentation.api.routes.document import router as document_router
 from evidenceos.presentation.api.routes.evidence import router as evidence_router
 from evidenceos.presentation.api.routes.health import router as health_router
 from evidenceos.presentation.api.routes.projects import router as projects_router
@@ -113,6 +116,16 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     async def handle_model_failure(request: Request, exc: EvidenceProviderFailure) -> JSONResponse:
         return JSONResponse(status_code=502, content={"detail": str(exc)})
 
+    @app.exception_handler(PdfTooLarge)
+    async def handle_large_pdf(request: Request, exc: PdfTooLarge) -> JSONResponse:
+        return JSONResponse(status_code=413, content={"detail": str(exc)})
+
+    @app.exception_handler(InvalidPdfDocument)
+    @app.exception_handler(InvalidDocumentClaim)
+    async def handle_document_input(request: Request, exc: ValueError) -> JSONResponse:
+        return JSONResponse(status_code=422, content={"detail": str(exc)})
+
+    app.include_router(document_router, prefix="/api/v1")
     app.include_router(evidence_router, prefix="/api/v1")
     app.include_router(academic_router, prefix="/api/v1")
     app.include_router(health_router, prefix="/api/v1")
