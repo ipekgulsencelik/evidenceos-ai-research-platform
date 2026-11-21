@@ -45,6 +45,39 @@ export function validateCitation(doi: string, title: string): string | null {
   return null;
 }
 
+/**
+ * Validate the browser's citation request before calling FastAPI.
+ * An omitted, empty, or null expected_title means "do not compare titles".
+ */
+export type ParsedCitationBody =
+  | { ok: true; doi: string; expected_title: string | null }
+  | { ok: false; status: 400 | 422; detail: string };
+
+export function parseCitationBody(value: unknown): ParsedCitationBody {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return { ok: false, status: 400, detail: "Invalid JSON request." };
+  }
+
+  const body = value as Record<string, unknown>;
+  if (
+    typeof body.doi !== "string" ||
+    (body.expected_title !== undefined &&
+      body.expected_title !== null &&
+      typeof body.expected_title !== "string")
+  ) {
+    return { ok: false, status: 422, detail: "DOI and expected title must be strings when provided." };
+  }
+
+  const doi = body.doi.trim();
+  const title = typeof body.expected_title === "string" ? body.expected_title.trim() : "";
+  const issue = validateCitation(doi, title);
+  if (issue) {
+    return { ok: false, status: 422, detail: issue };
+  }
+
+  return { ok: true, doi, expected_title: title || null };
+}
+
 export function getPublicationRange(works: AcademicWork[]): string {
   const years = works
     .map((work) => work.publication_year)
