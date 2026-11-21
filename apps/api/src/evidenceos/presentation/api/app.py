@@ -21,7 +21,13 @@ from evidenceos.domain.errors import (
     ProjectNotFound,
 )
 from evidenceos.infrastructure.config import Settings, get_settings
+from evidenceos.application.use_cases.evidence import InvalidEvidenceInput
+from evidenceos.infrastructure.providers.groq_evidence import (
+    EvidenceProviderFailure,
+    EvidenceProviderUnavailable,
+)
 from evidenceos.presentation.api.routes.academic import router as academic_router
+from evidenceos.presentation.api.routes.evidence import router as evidence_router
 from evidenceos.presentation.api.routes.health import router as health_router
 from evidenceos.presentation.api.routes.projects import router as projects_router
 
@@ -93,6 +99,24 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     ) -> JSONResponse:
         return JSONResponse(status_code=502, content={"detail": str(exc)})
 
+
+    @app.exception_handler(InvalidEvidenceInput)
+    async def handle_invalid_evidence(request: Request, exc: InvalidEvidenceInput) -> JSONResponse:
+        return JSONResponse(status_code=422, content={"detail": str(exc)})
+
+    @app.exception_handler(EvidenceProviderUnavailable)
+    async def handle_missing_model(
+        request: Request, exc: EvidenceProviderUnavailable
+    ) -> JSONResponse:
+        return JSONResponse(status_code=503, content={"detail": str(exc)})
+
+    @app.exception_handler(EvidenceProviderFailure)
+    async def handle_model_failure(
+        request: Request, exc: EvidenceProviderFailure
+    ) -> JSONResponse:
+        return JSONResponse(status_code=502, content={"detail": str(exc)})
+
+    app.include_router(evidence_router, prefix="/api/v1")
     app.include_router(academic_router, prefix="/api/v1")
     app.include_router(health_router, prefix="/api/v1")
     app.include_router(projects_router, prefix="/api/v1")

@@ -19,6 +19,8 @@ class Settings(BaseSettings):
     cors_origins: list[str] = Field(default_factory=list)
     openalex_api_key: str | None = None
     crossref_contact_email: str | None = None
+    groq_api_key: str | None = None
+    groq_model: str = "openai/gpt-oss-20b"
     research_timeout_seconds: float = Field(default=8.0, ge=1.0, le=30.0)
 
 
