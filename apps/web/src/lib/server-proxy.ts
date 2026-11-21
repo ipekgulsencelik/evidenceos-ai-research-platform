@@ -2,8 +2,9 @@
 import type { AcademicWork, CitationCheck } from "./academic";
 import type { EvidenceReport } from "./evidence";
 import type { PdfReview } from "./document";
+import type { LiteratureProfile } from "./literature";
 
-type BackendPayload = AcademicWork[] | CitationCheck | EvidenceReport | PdfReview;
+type BackendPayload = AcademicWork[] | CitationCheck | EvidenceReport | PdfReview | LiteratureProfile;
 
 export interface GatewayResult {
   status: number;
@@ -21,7 +22,8 @@ export async function callBackend(path: string, init?: RequestInit): Promise<Gat
       ...init,
       headers: { Accept: "application/json", ...(init?.headers || {}) },
       cache: "no-store",
-      signal: AbortSignal.timeout(path === "/api/v1/evidence/assess" ? 90000 : 30000),
+      signal: AbortSignal.timeout(path === "/api/v1/evidence/assess" ||
+        path === "/api/v1/literature/analyze-pdf" ? 90000 : 30000),
     });
     const payload: unknown = await upstream.json().catch(() => null);
     if (!payload || typeof payload !== "object") {

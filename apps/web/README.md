@@ -50,3 +50,10 @@ Enter a claim and select a searchable PDF in Import evidence passages from PDF.
 Choose Find passages, review page-grounded candidate snippets and click
 Use selected excerpts in assessment. Only clicking Assess claim sends chosen
 text to Groq. Max 8 MiB / 30 pages, no OCR, no PDF storage.
+
+## Scientific literature extraction
+
+Use the Scientific Literature Intelligence card below the metadata matrix.
+Upload a searchable PDF, consent to Groq processing of selected excerpts,
+and analyze. Up to five PDF profiles can be compared and exported as CSV.
+See docs/scientific-literature-intelligence.md in the repository root.

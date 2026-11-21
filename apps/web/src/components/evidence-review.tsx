@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { ArrowRight, CheckCircle2, CircleAlert, LoaderCircle, Plus, Trash2 } from "lucide-react";
 
+import { ScientificLiteratureIntelligence } from "@/components/scientific-literature-intelligence";
 import type { AcademicWork } from "@/lib/academic";
 import { PdfDocumentImport } from "@/components/pdf-document-import";
 import { literatureCsv, validateEvidenceRequest } from "@/lib/evidence";
@@ -137,6 +138,8 @@ export function EvidenceReview({
           </div>
         ) : <p className="panel-subtitle">Search for papers to populate this metadata matrix.</p>}
       </div>
+
+      <ScientificLiteratureIntelligence />
 
       <div className="card panel-pad">
         <h3 className="panel-title">AI-assisted claim assessment</h3>
