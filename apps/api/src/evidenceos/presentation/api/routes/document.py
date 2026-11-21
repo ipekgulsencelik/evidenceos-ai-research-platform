@@ -29,7 +29,11 @@ async def retrieve_passages(
     extractor: Annotated[DocumentTextExtractor, Depends(get_document_extractor)],
 ) -> DocumentReviewResponse:
     content_length = request.headers.get("content-length")
-    if content_length and content_length.isdecimal() and int(content_length) > MAX_PDF_BYTES + 16384:
+    if (
+        content_length
+        and content_length.isdecimal()
+        and int(content_length) > MAX_PDF_BYTES + 16384
+    ):
         raise PdfTooLarge("Upload exceeds the 8 MiB PDF limit")
     try:
         raw = await file.read(MAX_PDF_BYTES + 1)

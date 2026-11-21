@@ -13,7 +13,7 @@ _STOPWORDS = frozenset(
         "study", "research", "are", "was", "not", "only", "our",
         "bir", "ile", "olan", "icin", "için", "veya", "gibi", "daha",
         "olarak", "ancak", "üzerine", "arasında", "hakkında", "sonuç",
-        "çalışma", "çalışmada", "yapılan", "the", "birlikte",
+        "çalışma", "çalışmada", "yapılan", "birlikte",
     }
 )
 

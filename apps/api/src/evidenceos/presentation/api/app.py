@@ -23,11 +23,11 @@ from evidenceos.domain.errors import (
     ProjectNotFound,
 )
 from evidenceos.infrastructure.config import Settings, get_settings
-from evidenceos.infrastructure.providers.pypdf_document import InvalidPdfDocument, PdfTooLarge
 from evidenceos.infrastructure.providers.groq_evidence import (
     EvidenceProviderFailure,
     EvidenceProviderUnavailable,
 )
+from evidenceos.infrastructure.providers.pypdf_document import InvalidPdfDocument, PdfTooLarge
 from evidenceos.presentation.api.routes.academic import router as academic_router
 from evidenceos.presentation.api.routes.document import router as document_router
 from evidenceos.presentation.api.routes.evidence import router as evidence_router
