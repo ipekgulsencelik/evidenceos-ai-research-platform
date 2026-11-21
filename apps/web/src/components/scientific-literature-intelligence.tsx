@@ -1,42 +1,21 @@
 "use client";
 
 import { useState, type ChangeEvent, type FormEvent } from "react";
-import { CheckCircle2, CircleAlert, Download, FileText, LoaderCircle } from "lucide-react";
+import { CheckCircle2, CircleAlert, FileText, LoaderCircle } from "lucide-react";
+import { LiteratureReviewMatrix } from "@/components/literature-review-matrix";
 
 import {
-  FACETS, isLiteratureProfile, literatureProfileCsv, validateLiteratureUpload,
+  isLiteratureProfile, literatureProfileCsv, validateLiteratureUpload,
 } from "@/lib/literature";
-import type { LiteratureProfile } from "@/lib/literature";
+import type { HumanReview, HumanReviews, LiteratureProfile } from "@/lib/literature";
 
 const MAX_PROFILES = 5;
-
-function FindingCell({ report, facet }: {
-  report: LiteratureProfile;
-  facet: (typeof FACETS)[number]["key"];
-}) {
-  const finding = report.findings.find((f) => f.facet === facet);
-  if (!finding || finding.status === "not_identified") {
-    return <span className="literature-empty">Not identified in selected excerpts</span>;
-  }
-  if (finding.status === "rejected_quote") {
-    return <span className="literature-invalid">Unverifiable quotation discarded</span>;
-  }
-  return (
-    <div className="literature-cell">
-      <p>{finding.value}</p>
-      <small>{finding.locator}</small>
-      <details>
-        <summary>Source quotation</summary>
-        <blockquote>{finding.quote}</blockquote>
-      </details>
-    </div>
-  );
-}
 
 export function ScientificLiteratureIntelligence() {
   const [file, setFile] = useState<File | null>(null);
   const [consent, setConsent] = useState(false);
   const [profiles, setProfiles] = useState<LiteratureProfile[]>([]);
+  const [reviews, setReviews] = useState<HumanReviews>({});
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -79,6 +58,10 @@ export function ScientificLiteratureIntelligence() {
         const other = current.filter((p) => p.sha256 !== profile.sha256);
         return [...other, profile].slice(-MAX_PROFILES);
       });
+      // A new analysis invalidates manual annotations for that PDF.
+      setReviews((current) => Object.fromEntries(
+        Object.entries(current).filter(([key]) => !key.startsWith(profile.sha256 + ":")),
+      ));
       setConsent(false);
     } catch (failure) {
       setError(failure instanceof Error ? failure.message : "Literature extraction failed.");
@@ -90,7 +73,7 @@ export function ScientificLiteratureIntelligence() {
   function exportCsv() {
     if (!profiles.length) return;
     const url = URL.createObjectURL(new Blob(
-      ["\uFEFF" + literatureProfileCsv(profiles)], { type: "text/csv;charset=utf-8" },
+      ["\uFEFF" + literatureProfileCsv(profiles, reviews)], { type: "text/csv;charset=utf-8" },
     ));
     const link = document.createElement("a");
     link.href = url;
@@ -134,54 +117,27 @@ export function ScientificLiteratureIntelligence() {
       {error && <p className="alert" role="alert"><CircleAlert size={16} />{error}</p>}
 
       {profiles.length > 0 && (
-        <div className="literature-results" aria-live="polite">
-          <div className="review-heading">
-            <div><h4 className="panel-title">Source-grounded study comparison</h4>
-              <p className="panel-subtitle">
-                {profiles.length} of {MAX_PROFILES} document slots. Not identified does not mean
-                absent from the paper.
-              </p>
-            </div>
-            <button className="secondary-btn" type="button" onClick={exportCsv}>
-              <Download size={15} /> Export study matrix CSV
-            </button>
-          </div>
-          <div className="review-table-scroll literature-table-scroll">
-            <table className="review-table literature-table">
-              <thead><tr>
-                <th>Document</th>
-                {FACETS.map(({ key, label }) => <th key={key}>{label}</th>)}
-              </tr></thead>
-              <tbody>
-                {profiles.map((report) => (
-                  <tr key={report.sha256}>
-                    <th scope="row">
-                      <strong>{report.document_title}</strong>
-                      <span className="literature-subnote">
-                        {report.text_page_count}/{report.page_count} searchable pages
-                      </span>
-                      <span className="literature-subnote">{report.model}</span>
-                      <button type="button" className="link-btn"
-                        onClick={() => setProfiles((items) =>
-                          items.filter((p) => p.sha256 !== report.sha256))}>
-                        Remove
-                      </button>
-                    </th>
-                    {FACETS.map(({ key }) => (
-                      <td key={key}><FindingCell report={report} facet={key} /></td>
-                    ))}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <p className="review-caveat">
-            The AI can misinterpret even an exact quotation. Review the source pages and
-            study methods before using these entries in a thesis or systematic review.
-            Results are held in the browser session, not saved as permanent literature records.
-          </p>
-        </div>
+        <LiteratureReviewMatrix
+          profiles={profiles}
+          reviews={reviews}
+          onReviewChange={(key, change: Partial<HumanReview>) =>
+            setReviews((previous) => ({
+              ...previous,
+              [key]: {
+                ...(previous[key] ?? { corrected_value: "", note: "", reviewed: false }),
+                ...change,
+              },
+            }))}
+          onRemove={(sha) => {
+            setProfiles((list) => list.filter((p) => p.sha256 !== sha));
+            setReviews((previous) => Object.fromEntries(
+              Object.entries(previous).filter(([key]) => !key.startsWith(sha + ":")),
+            ));
+          }}
+          onExport={exportCsv}
+        />
       )}
+
     </section>
   );
 }

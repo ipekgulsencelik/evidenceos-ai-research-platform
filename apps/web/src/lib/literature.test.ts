@@ -2,7 +2,8 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
-  FACETS, isLiteratureProfile, literatureProfileCsv, validateLiteratureUpload,
+  FACETS, isLiteratureProfile, literatureProfileCsv, selectMatrixRows,
+  validateLiteratureUpload, reviewKey,
 } from "./literature.ts";
 import type { LiteratureProfile } from "./literature.ts";
 
@@ -18,6 +19,8 @@ const sample: LiteratureProfile = {
     value: key === "aim" ? "+A1" : null,
     quote: key === "aim" ? "The objective was to test this" : null,
     locator: key === "aim" ? "PDF page 1" : null,
+    rejection_reason: null,
+    locator_repaired: false,
   })),
 };
 
@@ -52,4 +55,50 @@ test("comparison export includes exact page references and sanitizes formulas", 
   assert.ok(csv.includes('"' + apostrophe + '+A1"'));
   assert.ok(csv.includes('"PDF page 1"'));
   assert.ok(csv.includes("The objective was to test this"));
+});
+
+
+test("status and facet filtering retain only requested comparison rows", () => {
+  const rows = selectMatrixRows([sample], {}, {
+    query: "", facet: "aim", status: "grounded",
+  });
+  assert.equal(rows.length, 1);
+  assert.equal(rows[0].finding.facet, "aim");
+  const rejected = selectMatrixRows([sample], {}, {
+    query: "", facet: "all", status: "rejected_quote",
+  });
+  assert.equal(rejected.length, 0);
+  const queryMatch = selectMatrixRows([sample], {}, {
+    query: "objective", facet: "all", status: "all",
+  });
+  assert.equal(queryMatch.length, 1);
+});
+
+test("researcher corrections remain separate from model provenance", () => {
+  const reviews = {
+    [reviewKey(sample.sha256, "aim")]: {
+      corrected_value: "=SUM(A1:A5)",
+      note: "+START formula",
+      reviewed: true,
+    },
+  };
+  const unchanged = sample.findings[0].value;
+  const csv = literatureProfileCsv([sample], reviews);
+  assert.equal(sample.findings[0].value, unchanged);
+  assert.ok(csv.includes('"' + "'=SUM(A1:A5)" + '"'));
+  assert.ok(csv.includes('"' + "'+START formula" + '"'));
+  assert.ok(csv.includes('"yes"'));
+  assert.ok(csv.includes("researcher correction (unverified)"));
+  assert.equal(selectMatrixRows([sample], reviews, {
+    query: "SUM(A1", facet: "all", status: "all",
+  }).length, 1);
+});
+
+test("invalid or unknown rejection codes are rejected by web boundary", () => {
+  assert.equal(isLiteratureProfile({
+    ...sample,
+    findings: sample.findings.map((item) => ({
+      ...item, rejection_reason: "unexpected_code",
+    })),
+  }), false);
 });

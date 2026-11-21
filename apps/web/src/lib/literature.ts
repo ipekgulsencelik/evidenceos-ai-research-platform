@@ -13,6 +13,29 @@ export const FACETS = [
 
 export type LiteratureFacet = (typeof FACETS)[number]["key"];
 export type FindingStatus = "grounded" | "not_identified" | "rejected_quote";
+export type RejectionReason =
+  | "duplicate_field" | "incomplete_evidence" | "quote_not_found"
+  | "ambiguous_location" | "invalid_length";
+
+export interface HumanReview {
+  corrected_value: string;
+  note: string;
+  reviewed: boolean;
+}
+export type HumanReviews = Record<string, HumanReview>;
+export type FacetFilter = LiteratureFacet | "all";
+export type StatusFilter = FindingStatus | "all";
+export interface MatrixFilters {
+  query: string;
+  facet: FacetFilter;
+  status: StatusFilter;
+}
+export interface MatrixRow {
+  profile: LiteratureProfile;
+  finding: LiteratureFinding;
+  key: string;
+}
+
 
 export interface LiteratureFinding {
   facet: LiteratureFacet;
@@ -20,6 +43,8 @@ export interface LiteratureFinding {
   value: string | null;
   quote: string | null;
   locator: string | null;
+  rejection_reason: RejectionReason | null;
+  locator_repaired: boolean;
 }
 
 export interface LiteratureProfile {
@@ -30,6 +55,44 @@ export interface LiteratureProfile {
   model: string;
   findings: LiteratureFinding[];
   caveat: string;
+}
+
+export const REJECTION_MESSAGES: Record<RejectionReason, string> = {
+  duplicate_field: "The model returned multiple values for this field; neither was trusted.",
+  incomplete_evidence: "The model did not provide both an interpretation and an exact quote.",
+  quote_not_found: "The proposed quotation is not verbatim in any selected PDF excerpt.",
+  ambiguous_location: "The exact quotation occurs on multiple pages without a valid reference.",
+  invalid_length: "The proposed value or quotation failed length checks.",
+};
+
+export function reviewKey(sha256: string, facet: LiteratureFacet): string {
+  return sha256 + ":" + facet;
+}
+
+export function selectMatrixRows(
+  profiles: LiteratureProfile[],
+  reviews: HumanReviews,
+  filters: MatrixFilters,
+): MatrixRow[] {
+  const query = filters.query.trim().toLocaleLowerCase();
+  return profiles.flatMap((profile) =>
+    profile.findings.filter((finding) => {
+      if (filters.facet !== "all" && finding.facet !== filters.facet) return false;
+      if (filters.status !== "all" && finding.status !== filters.status) return false;
+      const review = reviews[reviewKey(profile.sha256, finding.facet)];
+      const match = [
+        profile.document_title,
+        finding.value || "",
+        finding.quote || "",
+        finding.locator || "",
+        review?.corrected_value || "",
+        review?.note || "",
+      ].join(" ").toLocaleLowerCase();
+      return !query || match.includes(query);
+    }).map((finding) => ({
+      profile, finding, key: reviewKey(profile.sha256, finding.facet),
+    })),
+  );
 }
 
 export function validateLiteratureUpload(
@@ -60,6 +123,9 @@ export function isLiteratureProfile(value: unknown): value is LiteratureProfile 
       && (f.value === null || typeof f.value === "string")
       && (f.quote === null || typeof f.quote === "string")
       && (f.locator === null || typeof f.locator === "string")
+      && (f.rejection_reason === null ||
+          (typeof f.rejection_reason === "string" && f.rejection_reason in REJECTION_MESSAGES))
+      && typeof f.locator_repaired === "boolean"
     ));
 }
 
@@ -69,23 +135,34 @@ function csvCell(value: string): string {
   return '"' + safe.replaceAll('"', '""') + '"';
 }
 
-export function literatureProfileCsv(profiles: LiteratureProfile[]): string {
+export function literatureProfileCsv(
+  profiles: LiteratureProfile[],
+  reviews: HumanReviews = {},
+): string {
   const headers = [
     "Document", "SHA256", "Total PDF pages", "Text pages",
     ...FACETS.flatMap(({ label }) => [
-      label, label + " status", label + " page locator", label + " exact quote",
+      label + " AI extracted value", label + " AI status",
+      label + " page locator", label + " exact quote",
+      label + " rejection reason", label + " locator repaired",
+      label + " researcher correction (unverified)",
+      label + " researcher note", label + " reviewed against PDF",
     ]),
   ];
-  const rows = profiles.map((p) => [
-    p.document_title, p.sha256, String(p.page_count), String(p.text_page_count),
+  const rows = profiles.map((profile) => [
+    profile.document_title, profile.sha256, String(profile.page_count),
+    String(profile.text_page_count),
     ...FACETS.flatMap(({ key }) => {
-      const field = p.findings.find((item) => item.facet === key);
+      const finding = profile.findings.find((f) => f.facet === key);
+      const review = reviews[reviewKey(profile.sha256, key)];
       return [
-        field?.value || "", field?.status || "not_identified",
-        field?.locator || "", field?.quote || "",
+        finding?.value || "", finding?.status || "not_identified",
+        finding?.locator || "", finding?.quote || "",
+        finding?.rejection_reason || "", finding?.locator_repaired ? "yes" : "no",
+        review?.corrected_value || "", review?.note || "",
+        review?.reviewed ? "yes" : "no",
       ];
     }),
   ]);
-  return [headers, ...rows]
-    .map((row) => row.map(csvCell).join(",")).join("\r\n") + "\r\n";
+  return [headers, ...rows].map((row) => row.map(csvCell).join(",")).join("\r\n") + "\r\n";
 }

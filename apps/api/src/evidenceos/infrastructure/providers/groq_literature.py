@@ -21,7 +21,9 @@ Return one JSON object {"fields":[{"field":"aim|method|sample|instruments|findin
 "snippet_id":string|null,"quote":string|null,"value":string|null}]}.
 Include exactly these six field names, one object each. If no explicit evidence, set
 snippet_id, quote and value to null. Quote must be an exact contiguous substring
-copied verbatim from the selected snippet. Keep value a cautious, brief extraction
+of one provided snippet. Copy its punctuation and spelling exactly; do not
+paraphrase, add ellipses, alter case, or invent quotations. Prefer a short
+complete sentence, especially for the limitations field. Keep value a cautious, brief extraction
 (no extrapolation, no implied causality, no inferred psychometrics).
 The model must not invent sample sizes, instrument names, effects, DOI, page locators,
 or study conclusions. If any of these are not stated, set the field to null.
