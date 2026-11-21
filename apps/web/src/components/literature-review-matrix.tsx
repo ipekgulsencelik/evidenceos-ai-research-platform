@@ -10,6 +10,7 @@ import type {
   FacetFilter, HumanReview, HumanReviews, LiteratureFacet,
   LiteratureProfile, MatrixRow, StatusFilter,
 } from "@/lib/literature";
+import type { ReviewRevision } from "@/lib/workspace";
 
 interface Props {
   profiles: LiteratureProfile[];
@@ -17,6 +18,12 @@ interface Props {
   onReviewChange: (key: string, change: Partial<HumanReview>) => void;
   onRemove: (sha256: string) => void;
   onExport: () => void;
+  persistent?: boolean;
+  onSaveReview?: (row: MatrixRow) => void;
+  onLoadHistory?: (row: MatrixRow) => void;
+  history?: Record<string, ReviewRevision[]>;
+  savingKey?: string | null;
+  savedKey?: string | null;
 }
 
 function EvidenceCell({ row }: { row: MatrixRow }) {
@@ -55,11 +62,21 @@ function EvidenceCell({ row }: { row: MatrixRow }) {
 }
 
 function ReviewCell({
-  row, review, onChange,
+  row, review, onChange, onSave, onLoadHistory, revisions, saving, saved,
 }: {
   row: MatrixRow;
   review: HumanReview | undefined;
   onChange: (change: Partial<HumanReview>) => void;
+  onSave?: () => void;
+  onLoadHistory?: () => void;
+  revisions?: ReviewRevision[];
+  saving?: boolean;
+  saved?: boolean;
+  onSave?: () => void;
+  onLoadHistory?: () => void;
+  revisions?: ReviewRevision[];
+  saving?: boolean;
+  saved?: boolean;
 }) {
   const id = row.key.replaceAll(":", "-");
   return (
@@ -100,6 +117,31 @@ function ReviewCell({
             I reviewed this field against the original PDF
           </label>
           <small>Manual notes never change the model result or its verified source quote.</small>
+          {onSave && (
+            <button type="button" className="secondary-btn" onClick={onSave}
+              disabled={Boolean(saving)}>
+              {saving ? "Saving…" : "Save review revision"}
+            </button>
+          )}
+          {saved && <small role="status">Review saved to PostgreSQL.</small>}
+          {onLoadHistory && (
+            <button type="button" className="link-btn" onClick={onLoadHistory}>
+              View saved review history
+            </button>
+          )}
+          {revisions && (
+            <div className="literature-saved-history">
+              {revisions.length === 0 && <small>No review history yet.</small>}
+              {revisions.map((item) => (
+                <div key={item.id} className="literature-history-entry">
+                  <small>{new Date(item.created_at).toLocaleString()} ·
+                    {item.reviewed ? " Marked reviewed" : " Not reviewed"}</small>
+                  <p>{item.corrected_value || "No correction"}</p>
+                  {item.note && <p>{item.note}</p>}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </details>
     </div>
@@ -107,7 +149,8 @@ function ReviewCell({
 }
 
 export function LiteratureReviewMatrix({
-  profiles, reviews, onReviewChange, onRemove, onExport,
+  profiles, reviews, onReviewChange, onRemove, onExport, persistent,
+  onSaveReview, onLoadHistory, history, savingKey, savedKey,
 }: Props) {
   const [query, setQuery] = useState("");
   const [facet, setFacet] = useState<FacetFilter>("all");
@@ -182,7 +225,7 @@ export function LiteratureReviewMatrix({
                   </span>
                   <button type="button" className="link-btn"
                     onClick={() => onRemove(row.profile.sha256)}>
-                    Remove document
+                    {persistent ? "Hide from comparison" : "Remove document"}
                   </button>
                 </th>
                 <td><strong>{facetLabels[row.finding.facet]}</strong></td>
@@ -192,6 +235,11 @@ export function LiteratureReviewMatrix({
                     row={row}
                     review={reviews[row.key]}
                     onChange={(change) => onReviewChange(row.key, change)}
+                    onSave={onSaveReview ? () => onSaveReview(row) : undefined}
+                    onLoadHistory={onLoadHistory ? () => onLoadHistory(row) : undefined}
+                    revisions={history?.[row.key]}
+                    saving={savingKey === row.key}
+                    saved={savedKey === row.key}
                   />
                 </td>
               </tr>
