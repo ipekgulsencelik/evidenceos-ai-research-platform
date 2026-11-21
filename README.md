@@ -11,7 +11,7 @@ Python 3.12 / FastAPI / SQLAlchemy / PostgreSQL / Alembic / uv, Next.js 16 / Rea
 From repository root:
 
 ```powershell
-Copy-Item .env.example .env # only if .env is not already present; preserves your existing OpenAlex key
+if (-not (Test-Path .env)) { Copy-Item .env.example .env } # do not overwrite an existing API key
 # Edit .env and set EVIDENCEOS_OPENALEX_API_KEY using https://openalex.org/settings/api
 docker compose up --build -d
 docker compose ps
