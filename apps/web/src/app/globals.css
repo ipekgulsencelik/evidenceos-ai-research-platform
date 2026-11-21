@@ -127,3 +127,18 @@ a { text-underline-offset:3px; }
 .verdict-contradicts { color:#9e522c; background:#fff0e8; }
 .verdict-insufficient { color:#607986; background:#edf2f4; }
 @media (max-width:700px) { .review-source { padding:12px; } }
+
+
+/* Local PDF retrieval, scoped to the human-reviewed evidence form. */
+.pdf-import { margin-top:22px; border:1px solid #cddfdf; border-radius:12px; background:#f7fbfa; padding:19px; }
+.pdf-upload-controls { display:flex; align-items:end; gap:12px; flex-wrap:wrap; margin:10px 0; }
+.pdf-upload-controls .field { flex:1; min-width:190px; padding-top:10px; }
+.pdf-upload-controls .field-label { flex-basis:100%; margin:0; }
+.pdf-summary { font-size:13px; line-height:1.6; margin:14px 0 10px; }
+.pdf-candidate { display:block; border:1px solid #d9e8e8; background:white; margin:10px 0; padding:13px; border-radius:9px; cursor:pointer; }
+.pdf-candidate-heading { display:flex; align-items:center; flex-wrap:wrap; gap:9px; font-size:12px; color:#2b5a64; }
+.pdf-candidate-heading input { accent-color:#087e76; width:15px; height:15px; }
+.pdf-candidate-heading span { color:#65818c; }
+.pdf-candidate-excerpt { display:block; white-space:pre-wrap; overflow-wrap:anywhere; max-height:170px; overflow:auto; font-size:12px; line-height:1.65; margin-top:10px; padding:12px; border-left:3px solid #20877e; background:#f1f8f6; }
+.pdf-retrieval-result { margin-top:15px; }
+@media (max-width:700px) { .pdf-import {padding:13px;} .pdf-upload-controls .field {min-width:100%;} }

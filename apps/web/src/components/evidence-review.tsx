@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import { ArrowRight, CheckCircle2, CircleAlert, LoaderCircle, Plus, Trash2 } from "lucide-react";
 
 import type { AcademicWork } from "@/lib/academic";
+import { PdfDocumentImport } from "@/components/pdf-document-import";
 import { literatureCsv, validateEvidenceRequest } from "@/lib/evidence";
 import type { EvidenceReport, EvidenceRequest, EvidenceSource } from "@/lib/evidence";
 
@@ -48,6 +49,15 @@ export function EvidenceReview({
     setSources((items) => [...items, {
       localId: id, source_id: "manual-" + id, title: "", passage: "", locator: null,
     }]);
+  }
+
+  function usePdfPassages(passages: EvidenceSource[]) {
+    setSources(passages.map((passage) => ({
+      ...passage,
+      localId: nextSource.current++,
+    })));
+    setReport(null);
+    setError(null);
   }
 
   function exportCsv() {
@@ -145,6 +155,7 @@ export function EvidenceReview({
             value={claim} onChange={(e) => { setClaim(e.target.value); setReport(null); }}
             minLength={10} maxLength={500} required
             placeholder="Write a precise, testable statement based on the sources." />
+          <PdfDocumentImport claim={claim} onUse={usePdfPassages} />
           {sources.map((source, index) => (
             <div key={source.localId} className="review-source">
               <div className="review-heading">
