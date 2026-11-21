@@ -45,7 +45,7 @@ def normalize_doi(raw: str) -> str:
         candidate = candidate[4:].strip()
     for prefix in ("https://doi.org/", "http://doi.org/", "https://dx.doi.org/"):
         if candidate.lower().startswith(prefix):
-            candidate = candidate[len(prefix):]
+            candidate = candidate[len(prefix) :]
             break
     if len(candidate) > 255 or not re.fullmatch(r"10\.\d{4,9}/\S+", candidate):
         raise InvalidDoi("invalid DOI identifier")
