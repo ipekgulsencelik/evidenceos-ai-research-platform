@@ -103,3 +103,27 @@ a { text-underline-offset:3px; }
 @media (max-width:1150px) { .layout-shell { grid-template-columns:216px minmax(0,1fr); } .headerbar { padding:0 28px; } .page-container { padding:32px 28px 60px; } .dashboard-grid {grid-template-columns:minmax(0,1fr)} }
 @media (max-width:700px) { .layout-shell {display:block;} .sidebar {min-height:0;padding:13px 17px; } .brand { padding:0; } .sidebar nav,.sidebar-foot {display:none;} .headerbar {height:62px; padding:0 20px;} .page-container {padding:29px 17px 48px;} .header-right span {display:none;} .search-panel {padding:20px 16px;} .search-row {flex-wrap:wrap;} .input-wrap { flex-basis:100%; } .search-limit {flex:1;} .search-row .primary-btn {flex:1;} .stats-row {gap:7px;} .stat-card {padding:12px 10px;} .stat-value {font-size:17px;} .hero-title {font-size:29px;} }
 @media (prefers-reduced-motion:reduce) { .spinner {animation:none;} }
+
+/* Source-aware evidence comparison and accessible manuscript-review forms. */
+.review-section { margin-top:38px; display:grid; gap:15px; }
+.review-heading { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+.review-table-scroll { margin-top:15px; max-height:350px; overflow:auto; border:1px solid #e7edf0; border-radius:10px; }
+.review-table { width:100%; min-width:650px; border-collapse:collapse; font-size:12px; text-align:left; }
+.review-table th { background:#edf7f5; position:sticky; top:0; font-size:11px; color:#315960; }
+.review-table th,.review-table td { padding:11px; border-bottom:1px solid #e6ecee; vertical-align:top; }
+.review-table td { color:#35535b; overflow-wrap:anywhere; }
+.review-caveat { padding:13px; background:#f3f8f8; border:1px solid #deecec; border-radius:9px; color:#607983; font-size:12px; line-height:1.6; margin-top:14px; }
+.review-textarea { display:block; height:auto; min-height:96px; padding:12px 14px; resize:vertical; line-height:1.55; }
+.review-source { margin-top:18px; padding:17px; border:1px solid #e4eeee; border-radius:11px; background:#fbfcfc; }
+.review-source strong { font-size:13px; }
+.review-actions { display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-top:18px; }
+.review-report { margin-top:20px; }
+.review-report h4 { font-size:15px; font-weight:740; }
+.review-report small { font-size:11px; color:#70888e; font-weight:400; }
+.review-result { margin:11px 0; padding:15px; border-radius:9px; border:1px solid #e1eaeb; font-size:12px; line-height:1.6; }
+.review-result blockquote { margin:10px 0; padding:11px; background:#f0f7f5; border-left:3px solid #11857a; }
+.review-verdict { border-radius:6px; font-weight:750; font-size:11px; padding:4px 8px; }
+.verdict-supports { color:#117b59; background:#e5f5ee; }
+.verdict-contradicts { color:#9e522c; background:#fff0e8; }
+.verdict-insufficient { color:#607986; background:#edf2f4; }
+@media (max-width:700px) { .review-source { padding:12px; } }

@@ -26,6 +26,8 @@ import {
 } from "lucide-react";
 import { useRef, useState, type FormEvent } from "react";
 
+import { EvidenceReview } from "@/components/evidence-review";
+
 import {
   getPublicationRange,
   getResponseError,
@@ -70,6 +72,7 @@ function Sidebar() {
           <a className="side-link" href="#overview"><PanelTop size={17} /> Overview</a>
           <a className="side-link active" aria-current="page" href="#research-search"><BookOpenText size={17} /> Academic Research</a>
           <a className="side-link" href="#citation-verification"><ShieldCheck size={17} /> DOI Verification</a>
+          <a className="side-link" href="#evidence-review"><FileSearch size={17} /> Evidence Review</a>
         </div>
         <div className="side-separator" />
         <p className="side-label">Coming later</p>
@@ -88,7 +91,7 @@ function Sidebar() {
   );
 }
 
-function WorkCard({ work, onVerify }: { work: AcademicWork; onVerify: (work: AcademicWork) => void }) {
+function WorkCard({ work, onVerify, onReview }: { work: AcademicWork; onVerify: (work: AcademicWork) => void; onReview: (work: AcademicWork) => void }) {
   const safeUrl = safeExternalUrl(work.source_url);
   return (
     <article className="work-card">
@@ -98,6 +101,7 @@ function WorkCard({ work, onVerify }: { work: AcademicWork; onVerify: (work: Aca
       <div className="work-bottom">
         <p className="work-doi">{work.doi ? `DOI: ${work.doi}` : "DOI not available"}</p>
         <div className="work-actions">
+          <button className="link-btn" type="button" onClick={() => onReview(work)}><FileSearch size={13} /> Analyze passage</button>
           {work.doi && <button className="link-btn" type="button" onClick={() => onVerify(work)}><Fingerprint size={13} /> Verify DOI</button>}
           {safeUrl && <a className="link-btn" href={safeUrl} target="_blank" rel="noreferrer noopener" aria-label={`Open source for ${work.title}`}><ExternalLink size={13} /> Source</a>}
         </div>
@@ -133,6 +137,7 @@ function VerificationResult({ check }: { check: CitationCheck }) {
 }
 
 export function ResearchWorkspace() {
+  const [reviewWork, setReviewWork] = useState<AcademicWork | null>(null);
   const [query, setQuery] = useState("");
   const [limit, setLimit] = useState(10);
   const [works, setWorks] = useState<AcademicWork[]>([]);
@@ -201,6 +206,11 @@ export function ResearchWorkspace() {
     }
   }
 
+  function chooseForReview(work: AcademicWork) {
+    setReviewWork(work);
+    document.getElementById("evidence-review")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
   function chooseForVerification(work: AcademicWork) {
     verifyController.current?.abort();
     setDoi(work.doi || "");
@@ -241,7 +251,7 @@ export function ResearchWorkspace() {
               {searchState === "success" && <div className="stats-row"><div className="stat-card"><div className="stat-label">Sources found</div><div className="stat-value">{works.length}</div><div className="stat-note">Current search</div></div><div className="stat-card"><div className="stat-label">With DOI</div><div className="stat-value">{doiCount}</div><div className="stat-note">Metadata identifiers</div></div><div className="stat-card"><div className="stat-label">Publication years</div><div className="stat-value">{getPublicationRange(works)}</div><div className="stat-note">Among returned results</div></div></div>}
               <div className="card" aria-live="polite">
                 {searchState === "loading" ? <div className="empty-state"><div className="empty-icon"><LoaderCircle className="spinner" size={25} /></div><strong>Searching academic records…</strong><p>Requesting sources from OpenAlex.</p></div>
-                  : searchState === "success" && works.length > 0 ? works.map((work) => <WorkCard key={work.source_id} work={work} onVerify={chooseForVerification} />)
+                  : searchState === "success" && works.length > 0 ? works.map((work) => <WorkCard key={work.source_id} work={work} onVerify={chooseForVerification} onReview={chooseForReview} />)
                   : <div className="empty-state"><div className="empty-icon"><FileSearch size={25} strokeWidth={1.7} /></div><strong>{searchState === "success" ? "No matching records" : "Your research starts here"}</strong><p>{searchState === "success" ? "Try another term or broader topic." : "Enter a research topic above to discover real papers, author lists, publication years, and DOIs."}</p></div>}
               </div>
             </section>
@@ -265,6 +275,7 @@ export function ResearchWorkspace() {
               <div style={{ display: "flex", gap: 7, alignItems: "center", color: "#92a3aa", fontSize: 11, padding: "23px 6px" }}><ArrowDownRight size={14} /> Built for transparent academic discovery</div>
             </aside>
           </div>
+          <EvidenceReview works={works} selectedWork={reviewWork} />
         </main>
       </div>
     </div>
