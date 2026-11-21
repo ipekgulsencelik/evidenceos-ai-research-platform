@@ -271,9 +271,7 @@ async def test_wrong_model_source_id_can_be_repaired_from_exact_pdf_quote() -> N
             )
 
     result = await ExtractLiteratureProfile(WrongSource()).execute(DOC)
-    finding = next(
-        item for item in result.findings if item.facet is LiteratureFacet.LIMITATIONS
-    )
+    finding = next(item for item in result.findings if item.facet is LiteratureFacet.LIMITATIONS)
     assert finding.status is FindingStatus.GROUNDED
     assert finding.quote is not None
     assert finding.quote in DOC.pages[1].text

@@ -177,9 +177,7 @@ def _review_proposal(
 
     specified = available.get(proposal.snippet_id or "")
     if specified is not None and quote in specified.passage:
-        return LiteratureFinding(
-            facet, FindingStatus.GROUNDED, value, quote, specified.locator
-        )
+        return LiteratureFinding(facet, FindingStatus.GROUNDED, value, quote, specified.locator)
 
     # The model may reference the wrong snippet ID. Only recover an exact quote
     # when all matched source snippets point to the SAME PDF page. Never guess.
@@ -213,8 +211,7 @@ class ExtractLiteratureProfile:
             grouped.setdefault(proposal.facet, []).append(proposal)
 
         findings = [
-            _review_proposal(facet, grouped.get(facet, []), available)
-            for facet in FACET_ORDER
+            _review_proposal(facet, grouped.get(facet, []), available) for facet in FACET_ORDER
         ]
 
         return LiteratureProfile(
@@ -226,7 +223,7 @@ class ExtractLiteratureProfile:
             findings=tuple(findings),
             caveat=(
                 "Preliminary AI interpretation of selected PDF excerpts only. "
-                "Quotations are checked against selected PDF excerpts; recovered locators " 
+                "Quotations are checked against selected PDF excerpts; recovered locators "
                 "are marked. The interpretation, "
                 "research methodology and original PDF must be verified by a human. "
                 "Not identified means not found in the selected excerpts, not absent "
