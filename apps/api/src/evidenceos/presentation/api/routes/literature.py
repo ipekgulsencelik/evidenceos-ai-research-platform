@@ -63,7 +63,5 @@ async def analyze_pdf(
     extractor: Annotated[DocumentTextExtractor, Depends(get_pdf_extractor)],
     analyst: Annotated[LiteratureAnalyst, Depends(get_literature_analyst)],
 ) -> LiteratureProfileResponse:
-    profile = await extract_pdf_profile(
-        request, file, share_excerpts_with_ai, extractor, analyst
-    )
+    profile = await extract_pdf_profile(request, file, share_excerpts_with_ai, extractor, analyst)
     return LiteratureProfileResponse.from_entity(profile)

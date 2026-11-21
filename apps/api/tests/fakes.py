@@ -28,7 +28,6 @@ class FakeProjectRepository:
         self._pending.clear()
 
 
-
 class FakeLiteratureRepository:
     def __init__(self) -> None:
         self.entries: dict[UUID, LiteratureEntry] = {}
@@ -40,21 +39,16 @@ class FakeLiteratureRepository:
     async def get(self, entry_id: UUID) -> LiteratureEntry | None:
         return self.entries.get(entry_id)
 
-    async def list_for_project(
-        self, project_id: UUID, *, limit: int = 20
-    ) -> list[LiteratureEntry]:
+    async def list_for_project(self, project_id: UUID, *, limit: int = 20) -> list[LiteratureEntry]:
         return [row for row in self.entries.values() if row.project_id == project_id][:limit]
 
     async def add_review(self, revision: ReviewRevision) -> None:
         self.reviews.append(revision)
 
-    async def list_reviews(
-        self, entry_id: UUID, *, limit: int = 100
-    ) -> list[ReviewRevision]:
-        return [
-            revision for revision in reversed(self.reviews)
-            if revision.entry_id == entry_id
-        ][:limit]
+    async def list_reviews(self, entry_id: UUID, *, limit: int = 100) -> list[ReviewRevision]:
+        return [revision for revision in reversed(self.reviews) if revision.entry_id == entry_id][
+            :limit
+        ]
 
 
 class FakeUnitOfWork:
@@ -89,4 +83,3 @@ class FakeUnitOfWork:
     async def commit(self) -> None:
         self._projects.flush()
         self.committed = True
-

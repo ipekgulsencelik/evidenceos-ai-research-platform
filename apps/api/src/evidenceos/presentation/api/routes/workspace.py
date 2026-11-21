@@ -53,9 +53,7 @@ async def analyze_and_save_pdf(
     project = await GetProject(uow_factory).execute(project_id)
     if project.domain is not ResearchDomain.ACADEMIC:
         raise InvalidResearchWorkspace("Literature workspace requires an academic project")
-    profile = await extract_pdf_profile(
-        request, file, share_excerpts_with_ai, extractor, analyst
-    )
+    profile = await extract_pdf_profile(request, file, share_excerpts_with_ai, extractor, analyst)
     saved = await SaveLiteratureAnalysis(uow_factory).execute(project_id, profile)
     return SavedLiteratureResponse.from_entity(saved)
 
@@ -111,7 +109,5 @@ async def get_review_history(
     uow_factory: Annotated[UnitOfWorkFactory, Depends(get_uow_factory)],
     limit: Annotated[int, Query(ge=1, le=100)] = 100,
 ) -> list[ReviewRevisionResponse]:
-    revisions = await ListReviewRevisions(uow_factory).execute(
-        project_id, entry_id, limit=limit
-    )
+    revisions = await ListReviewRevisions(uow_factory).execute(project_id, entry_id, limit=limit)
     return [ReviewRevisionResponse.from_entity(revision) for revision in revisions]

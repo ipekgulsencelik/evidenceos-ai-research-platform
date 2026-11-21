@@ -26,9 +26,7 @@ class ProjectRow(Base):
 
 class LiteratureEntryRow(Base):
     __tablename__ = "literature_entries"
-    __table_args__ = (
-        Index("ix_literature_entries_project_created", "project_id", "created_at"),
-    )
+    __table_args__ = (Index("ix_literature_entries_project_created", "project_id", "created_at"),)
 
     id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True)
     project_id: Mapped[UUID] = mapped_column(

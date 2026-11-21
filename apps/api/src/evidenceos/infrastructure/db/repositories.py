@@ -122,9 +122,7 @@ class SqlAlchemyLiteratureRepository:
         row = await self._session.get(LiteratureEntryRow, entry_id)
         return self._to_entity(row) if row is not None else None
 
-    async def list_for_project(
-        self, project_id: UUID, *, limit: int = 20
-    ) -> list[LiteratureEntry]:
+    async def list_for_project(self, project_id: UUID, *, limit: int = 20) -> list[LiteratureEntry]:
         result = await self._session.scalars(
             select(LiteratureEntryRow)
             .where(LiteratureEntryRow.project_id == project_id)
@@ -146,9 +144,7 @@ class SqlAlchemyLiteratureRepository:
             )
         )
 
-    async def list_reviews(
-        self, entry_id: UUID, *, limit: int = 100
-    ) -> list[ReviewRevision]:
+    async def list_reviews(self, entry_id: UUID, *, limit: int = 100) -> list[ReviewRevision]:
         result = await self._session.scalars(
             select(ReviewRevisionRow)
             .where(ReviewRevisionRow.entry_id == entry_id)

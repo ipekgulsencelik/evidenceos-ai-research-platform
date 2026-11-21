@@ -43,9 +43,7 @@ class SaveLiteratureAnalysis:
             if project is None:
                 raise ProjectNotFound(f"project '{project_id}' not found")
             if project.domain is not ResearchDomain.ACADEMIC:
-                raise InvalidResearchWorkspace(
-                    "Literature workspace requires an academic project"
-                )
+                raise InvalidResearchWorkspace("Literature workspace requires an academic project")
             await uow.literature.add(entry)
             await uow.commit()
         return entry

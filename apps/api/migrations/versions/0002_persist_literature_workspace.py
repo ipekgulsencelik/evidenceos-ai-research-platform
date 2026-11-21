@@ -26,9 +26,7 @@ def upgrade() -> None:
         sa.Column("findings", sa.JSON(), nullable=False),
         sa.Column("caveat", sa.Text(), nullable=False),
         sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
-        sa.ForeignKeyConstraint(
-            ["project_id"], ["research_projects.id"], ondelete="CASCADE"
-        ),
+        sa.ForeignKeyConstraint(["project_id"], ["research_projects.id"], ondelete="CASCADE"),
     )
     op.create_index(
         "ix_literature_entries_project_created",
@@ -48,9 +46,7 @@ def upgrade() -> None:
             "facet IN ('aim', 'method', 'sample', 'instruments', 'findings', 'limitations')",
             name="ck_literature_review_facet",
         ),
-        sa.ForeignKeyConstraint(
-            ["entry_id"], ["literature_entries.id"], ondelete="CASCADE"
-        ),
+        sa.ForeignKeyConstraint(["entry_id"], ["literature_entries.id"], ondelete="CASCADE"),
     )
     op.create_index(
         "ix_literature_revisions_entry_created",

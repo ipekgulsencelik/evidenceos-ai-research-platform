@@ -55,18 +55,15 @@ def example_profile() -> LiteratureProfile:
             LiteratureFinding(
                 facet=facet,
                 status=(
-                    FindingStatus.GROUNDED if facet is LiteratureFacet.AIM
+                    FindingStatus.GROUNDED
+                    if facet is LiteratureFacet.AIM
                     else FindingStatus.NOT_IDENTIFIED
                 ),
                 value=(
-                    "Evaluate chatbot use in adolescents."
-                    if facet is LiteratureFacet.AIM
-                    else None
+                    "Evaluate chatbot use in adolescents." if facet is LiteratureFacet.AIM else None
                 ),
                 quote=(
-                    "Objective: evaluate chatbot use."
-                    if facet is LiteratureFacet.AIM
-                    else None
+                    "Objective: evaluate chatbot use." if facet is LiteratureFacet.AIM else None
                 ),
                 locator=("PDF page 1" if facet is LiteratureFacet.AIM else None),
             )
@@ -150,8 +147,12 @@ async def test_sqlite_literature_persists_across_unit_of_work_sessions() -> None
 
         revision = await SaveReviewRevision(make_uow).execute(
             SaveReviewCommand(
-                project.id, entry.id, LiteratureFacet.LIMITATIONS,
-                "Researcher comment", "Review PDF page 2", True,
+                project.id,
+                entry.id,
+                LiteratureFacet.LIMITATIONS,
+                "Researcher comment",
+                "Review PDF page 2",
+                True,
             )
         )
         assert revision.reviewed is True
@@ -177,9 +178,7 @@ class FakeAnalyst:
     def model_id(self) -> str:
         return "test-model"
 
-    async def extract(
-        self, snippets: tuple[LiteratureSnippet, ...]
-    ) -> tuple[ProposedFinding, ...]:
+    async def extract(self, snippets: tuple[LiteratureSnippet, ...]) -> tuple[ProposedFinding, ...]:
         assert snippets
         return (
             ProposedFinding(
@@ -198,8 +197,8 @@ def client() -> Iterator[TestClient]:
     )
     project_store: dict[UUID, ResearchProject] = {}
     literature_store = FakeLiteratureRepository()
-    app.dependency_overrides[get_uow_factory] = (
-        lambda: lambda: FakeUnitOfWork(project_store, literature_store)
+    app.dependency_overrides[get_uow_factory] = lambda: (
+        lambda: FakeUnitOfWork(project_store, literature_store)
     )
     app.dependency_overrides[get_pdf_extractor] = FakePdfExtractor
     app.dependency_overrides[get_literature_analyst] = FakeAnalyst
@@ -245,19 +244,20 @@ def test_http_project_workspace_round_trip_and_review_history(client: TestClient
     )
     assert one.status_code == two.status_code == 201
     revisions = client.get(endpoint).json()
-    assert [revision["corrected_value"] for revision in revisions] == [
-        "Second note", "First note"
-    ]
+    assert [revision["corrected_value"] for revision in revisions] == ["Second note", "First note"]
 
     another = client.post(
         "/api/v1/projects", json={"title": "Another project", "domain": "academic"}
     ).json()["id"]
     assert client.get(f"/api/v1/projects/{another}/literature").json() == []
     assert client.get(f"/api/v1/projects/{another}/literature/{saved_id}").status_code == 404
-    assert client.post(
-        f"/api/v1/projects/{another}/literature/{saved_id}/reviews",
-        json={"facet": "aim", "note": "cross-project"},
-    ).status_code == 404
+    assert (
+        client.post(
+            f"/api/v1/projects/{another}/literature/{saved_id}/reviews",
+            json={"facet": "aim", "note": "cross-project"},
+        ).status_code
+        == 404
+    )
 
 
 def test_http_validates_consent_and_review_payload(client: TestClient) -> None:
