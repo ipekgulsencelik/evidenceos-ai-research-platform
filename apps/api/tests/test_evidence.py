@@ -45,9 +45,7 @@ class FakeJudge:
 
 class BadQuoteJudge(FakeJudge):
     async def judge(self, claim: str, source: EvidenceSource) -> EvidenceJudgment:
-        return EvidenceJudgment(
-            EvidenceVerdict.SUPPORTS, "invented quotation", "Model-generated"
-        )
+        return EvidenceJudgment(EvidenceVerdict.SUPPORTS, "invented quotation", "Model-generated")
 
 
 @pytest.mark.asyncio
@@ -163,7 +161,5 @@ def test_evidence_http_endpoint(client: TestClient) -> None:
 
 
 def test_invalid_payload_is_rejected(client: TestClient) -> None:
-    result = client.post(
-        "/api/v1/evidence/assess", json={"claim": "too short", "sources": []}
-    )
+    result = client.post("/api/v1/evidence/assess", json={"claim": "too short", "sources": []})
     assert result.status_code == 422
