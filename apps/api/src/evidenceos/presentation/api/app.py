@@ -99,7 +99,6 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     ) -> JSONResponse:
         return JSONResponse(status_code=502, content={"detail": str(exc)})
 
-
     @app.exception_handler(InvalidEvidenceInput)
     async def handle_invalid_evidence(request: Request, exc: InvalidEvidenceInput) -> JSONResponse:
         return JSONResponse(status_code=422, content={"detail": str(exc)})
@@ -111,9 +110,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         return JSONResponse(status_code=503, content={"detail": str(exc)})
 
     @app.exception_handler(EvidenceProviderFailure)
-    async def handle_model_failure(
-        request: Request, exc: EvidenceProviderFailure
-    ) -> JSONResponse:
+    async def handle_model_failure(request: Request, exc: EvidenceProviderFailure) -> JSONResponse:
         return JSONResponse(status_code=502, content={"detail": str(exc)})
 
     app.include_router(evidence_router, prefix="/api/v1")
