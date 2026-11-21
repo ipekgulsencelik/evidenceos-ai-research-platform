@@ -24,3 +24,11 @@ class AcademicProviderError(RuntimeError):
 
 class AcademicConfigurationError(RuntimeError):
     """Required academic provider configuration is missing."""
+
+
+class LiteratureEntryNotFound(DomainError):
+    """No literature analysis was found within the specified project."""
+
+
+class InvalidResearchWorkspace(DomainError):
+    """A research workspace operation is invalid or not permitted."""
