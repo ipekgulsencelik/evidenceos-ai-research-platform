@@ -67,3 +67,11 @@ researchers insert chosen excerpts into the existing AI assessment form.
 PDF upload does not invoke Groq. Only explicit assessment sends selected passages.
 No OCR, persistent PDF storage, or scientific claim-support guarantees.
 See docs/pdf-document-intelligence.md for boundaries and limitations.
+
+## Scientific Literature Intelligence
+
+New: consent-based AI extraction of research aim, design, participants,
+instruments, findings and limitations from a PDF. Each included field must
+have an exact quote from a selected original page. Compare up to five
+documents and export CSV. Manual scientific verification is still required.
+Details: docs/scientific-literature-intelligence.md.
