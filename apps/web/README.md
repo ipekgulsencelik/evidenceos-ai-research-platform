@@ -31,7 +31,7 @@ Requires Node.js >= 20.9.0, a running backend, and npm access:
 
 ```powershell
 cd apps/web
-npm install
+npm ci
 $env:BACKEND_API_URL="http://127.0.0.1:8001"
 npm run dev
 ```
@@ -42,4 +42,4 @@ Then open http://localhost:3000. Run `npm run check` and `npm run build` for qua
 
 Local development only: no identity, authorization, tenancy, or rate limiting. Do **not** expose this app directly on the public internet. The Next.js proxy validates parameters, forwards only fixed route paths, and never receives OpenAlex credentials. The backend reads the OpenAlex API key from root `.env`; secrets should never be committed to GitHub. This app only checks bibliographic records, **not** whether an article's conclusions support a scientific claim.
 
-The npm lockfile should be committed once generated from an online machine. CI uses `npm install` for this initial frontend PR because this build environment does not have registry access.
+The npm lockfile is committed; CI and Docker use `npm ci` for reproducible installs.

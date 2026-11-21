@@ -11,7 +11,7 @@ Python 3.12 / FastAPI / SQLAlchemy / PostgreSQL / Alembic / uv, Next.js 16 / Rea
 From repository root:
 
 ```powershell
-if (-not (Test-Path .env)) { Copy-Item .env.example .env } # do not overwrite an existing API key
+Copy-Item .env.example .env # only if .env is not already present; preserves your existing OpenAlex key
 # Edit .env and set EVIDENCEOS_OPENALEX_API_KEY using https://openalex.org/settings/api
 docker compose up --build -d
 docker compose ps
@@ -57,4 +57,4 @@ GitHub Actions runs backend lint, strict typing, coverage, PostgreSQL integratio
 
 This software is an **early-stage development system**. It does not yet include authentication, authorization, RBAC, tenant isolation, public rate limiting, security reviews, audit logs, or legal counsel signoff. **Do not publish the web or API service to the internet or process sensitive customer data.** Web and API host ports bind to `127.0.0.1` for local use. OpenAlex and Crossref are external dependencies whose data access and usage terms must be respected.
 
-Development dependencies are declared in `package.json`; a checked-in npm lockfile is still a hardening task. Do not claim reproducible dependency resolution until `package-lock.json` is committed.
+Web dependency versions are pinned by the committed `apps/web/package-lock.json`; CI and Docker use `npm ci` to install reproducibly.
