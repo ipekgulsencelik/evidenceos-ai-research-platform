@@ -5,7 +5,7 @@ from contextlib import asynccontextmanager
 from uuid import uuid4
 
 import httpx
-from fastapi import FastAPI, Request
+from fastapi import Depends, FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
@@ -41,6 +41,7 @@ from evidenceos.presentation.api.routes.projects import router as projects_route
 from evidenceos.presentation.api.routes.quality import router as quality_router
 from evidenceos.presentation.api.routes.semantic import router as semantic_router
 from evidenceos.presentation.api.routes.workspace import router as workspace_router
+from evidenceos.presentation.api.security import validate_service_credential
 
 
 class RequestIdMiddleware(BaseHTTPMiddleware):
@@ -145,17 +146,23 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     async def handle_document_input(request: Request, exc: ValueError) -> JSONResponse:
         return JSONResponse(status_code=422, content={"detail": str(exc)})
 
-    app.include_router(literature_router, prefix="/api/v1")
-    app.include_router(document_router, prefix="/api/v1")
-    app.include_router(evidence_router, prefix="/api/v1")
-    app.include_router(academic_router, prefix="/api/v1")
+    # Every research route is protected at composition, before handlers run.
+    # Health probes are deliberately public for container orchestration.
+    protected = [Depends(validate_service_credential)]
+    for router in (
+        literature_router,
+        document_router,
+        evidence_router,
+        academic_router,
+        projects_router,
+        workspace_router,
+        library_router,
+        semantic_router,
+        methodology_router,
+        quality_router,
+    ):
+        app.include_router(router, prefix="/api/v1", dependencies=protected)
     app.include_router(health_router, prefix="/api/v1")
-    app.include_router(projects_router, prefix="/api/v1")
-    app.include_router(workspace_router, prefix="/api/v1")
-    app.include_router(library_router, prefix="/api/v1")
-    app.include_router(semantic_router, prefix="/api/v1")
-    app.include_router(methodology_router, prefix="/api/v1")
-    app.include_router(quality_router, prefix="/api/v1")
     return app
 
 

@@ -8,6 +8,7 @@ import type { GapComparison, LibraryItem, LibraryMetadata } from "./research-lib
 import type { SemanticGapReport } from "./semantic";
 import type { MethodologyReport } from "./methodology";
 import type { QualityChecklist, QualityRevision } from "./quality";
+import { securityEnabled } from "./security";
 
 type BackendPayload =
   | AcademicWork[] | CitationCheck | EvidenceReport | PdfReview | LiteratureProfile
@@ -26,10 +27,20 @@ function endpoint(path: string): URL {
 }
 
 export async function callBackend(path: string, init?: RequestInit): Promise<GatewayResult> {
+  const protectedMode = securityEnabled(
+    process.env.EVIDENCEOS_APP_ENV, process.env.EVIDENCEOS_SECURITY_MODE,
+  );
+  const token = process.env.EVIDENCEOS_API_SERVICE_TOKEN;
+  if (protectedMode && (!token || token.length < 32)) {
+    return { status: 503, body: { detail: "Research service authentication is not configured." } };
+  }
   try {
     const upstream = await fetch(endpoint(path), {
       ...init,
-      headers: { Accept: "application/json", ...(init?.headers || {}) },
+      headers: {
+        Accept: "application/json", ...(init?.headers || {}),
+        ...(protectedMode ? { Authorization: `Bearer ${token}` } : {}),
+      },
       cache: "no-store",
       signal: AbortSignal.timeout(path === "/api/v1/evidence/assess" ||
         path.endsWith("/literature/analyze-pdf") ||

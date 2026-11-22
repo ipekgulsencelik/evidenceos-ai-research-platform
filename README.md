@@ -128,3 +128,18 @@ self-attested as checked against the original full PDF, stored as append-only
 PostgreSQL revisions by Alembic 0004, and shown separately from immutable
 AI evidence. This is **not a validated risk-of-bias tool or automatic quality
 score**. See `docs/research-quality-bias-intelligence.md`.
+
+## Security Foundation — protected local single-operator mode
+
+Optional `EVIDENCEOS_SECURITY_MODE=service_token` adds a Bearer credential gate
+to all research API endpoints and a separate HTTP Basic gate for the localhost
+web workspace. The web server forwards the internal token without exposing it
+to the browser. Production configuration fails closed if the service token is
+missing or too short; health probes remain unauthenticated.
+
+**This is not user authentication, project-level authorization, RBAC, or
+tamper-evident auditing.** The default local mode remains unprotected.
+Do not deploy this single-operator proof of concept to the public internet.
+
+Configuration, migration-safe instructions, validation, and remaining security
+work: [Security Foundation](docs/security-foundation.md).
