@@ -1,6 +1,6 @@
 /** Server-only, authenticated encryption for short-lived OIDC browser cookies.
- * An encrypted client-side session is NOT centrally revocable. Expiry is capped;
- * refresh tokens are never stored or returned to the browser.
+ * The session includes a random ID which must also exist in Redis; copied
+ * encrypted cookies are denied immediately after central revocation.
  */
 import { createCipheriv, createDecipheriv, randomBytes } from "node:crypto";
 
@@ -10,6 +10,7 @@ export const SESSION_MAX_SECONDS = 600;
 export const FLOW_MAX_SECONDS = 300;
 
 export interface BrowserSession {
+  sid: string;
   accessToken: string;
   expiresAt: number;
 }
@@ -82,7 +83,9 @@ export function openCookie<T>(name: string, data: string | undefined): T | null 
 
 export function readSession(value: string | undefined): BrowserSession | null {
   const session = openCookie<BrowserSession>(SESSION_COOKIE, value);
-  if (!session || typeof session.accessToken !== "string" ||
+  if (!session || typeof session.sid !== "string" ||
+      !/^[A-Za-z0-9_-]{43}$/.test(session.sid) ||
+      typeof session.accessToken !== "string" ||
       session.accessToken.length < 1 || session.accessToken.length > 8192) return null;
   return session;
 }
