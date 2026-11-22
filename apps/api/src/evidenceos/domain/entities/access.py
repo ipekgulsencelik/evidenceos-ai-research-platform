@@ -23,9 +23,7 @@ class ProjectAction(StrEnum):
 
 _ALLOWED: dict[ProjectRole, frozenset[ProjectAction]] = {
     ProjectRole.OWNER: frozenset(ProjectAction),
-    ProjectRole.EDITOR: frozenset(
-        (ProjectAction.READ, ProjectAction.WRITE, ProjectAction.REVIEW)
-    ),
+    ProjectRole.EDITOR: frozenset((ProjectAction.READ, ProjectAction.WRITE, ProjectAction.REVIEW)),
     ProjectRole.REVIEWER: frozenset((ProjectAction.READ, ProjectAction.REVIEW)),
     ProjectRole.VIEWER: frozenset((ProjectAction.READ,)),
 }
@@ -64,9 +62,7 @@ class ProjectMembership:
     created_at: datetime
 
     @classmethod
-    def create(
-        cls, project_id: UUID, principal_key: str, role: ProjectRole
-    ) -> "ProjectMembership":
+    def create(cls, project_id: UUID, principal_key: str, role: ProjectRole) -> "ProjectMembership":
         if len(principal_key) != 64 or any(c not in "0123456789abcdef" for c in principal_key):
             raise ValueError("invalid principal key")
         return cls(project_id, principal_key, role, datetime.now(UTC))
@@ -84,7 +80,11 @@ class AccessDecisionEvent:
 
     @classmethod
     def create(
-        cls, actor_key: str, project_id: UUID | None, action: str, outcome: str,
+        cls,
+        actor_key: str,
+        project_id: UUID | None,
+        action: str,
+        outcome: str,
         request_id: str = "",
     ) -> "AccessDecisionEvent":
         if outcome not in ("allowed", "denied"):
