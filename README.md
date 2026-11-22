@@ -103,3 +103,8 @@ The "gap" output is a **manual verification candidate**, not a scientific
 claim that the literature lacks evidence. No extra AI call is made by the
 comparison. Migration 0003 adds metadata without altering existing records.
 See docs/research-library-gap-analysis.md for scope and privacy limits.
+
+
+## Semantic Research Gap Intelligence (preview)
+
+Optional consent-gated Groq comparison of populations, study designs, scales and findings from saved source quotations in **2–10 different PDFs**. Every source reference is checked on the backend and tentative findings are labeled for manual review. No claims of proven scientific novelty. No PDF binaries are sent. See `docs/semantic-research-gap-intelligence.md`.
