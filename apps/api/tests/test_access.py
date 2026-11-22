@@ -38,7 +38,8 @@ def user(identifier: str) -> Principal:
     ],
 )
 def test_explicit_role_matrix(
-    role: ProjectRole | None, allowed_actions: set[ProjectAction],
+    role: ProjectRole | None,
+    allowed_actions: set[ProjectAction],
 ) -> None:
     for action in ProjectAction:
         assert role_allows(role, action) == (action in allowed_actions)
@@ -77,9 +78,7 @@ async def test_role_assignment_and_denied_access_are_audited() -> None:
     with pytest.raises(ProjectNotFound):
         await EnforceProjectAccess(factory).execute(bob, project.id, ProjectAction.WRITE)
     with pytest.raises(ProjectNotFound):
-        await AssignProjectRole(factory).execute(
-            bob, project.id, charlie.key, ProjectRole.OWNER
-        )
+        await AssignProjectRole(factory).execute(bob, project.id, charlie.key, ProjectRole.OWNER)
     assert await memberships.role_for(project.id, charlie.key) is None
     assert [event.outcome for event in audit.events if event.action == "write"] == ["denied"]
     assert audit.events[-1].action == "membership.assign"
@@ -118,9 +117,9 @@ def test_routes_hide_other_users_projects_and_filter_listing() -> None:
         assert client.get("/api/v1/projects").json() == []
         assert client.get(f"/api/v1/projects/{project_id}").status_code == 404
         assert client.get(f"/api/v1/projects/{project_id}/library").status_code == 404
-        assert client.post(
-            f"/api/v1/projects/{project_id}/research-gaps", json={}
-        ).status_code == 404
+        assert (
+            client.post(f"/api/v1/projects/{project_id}/research-gaps", json={}).status_code == 404
+        )
         assert client.get(f"/api/v1/projects/{project_id}/access-audit").status_code == 404
 
         holder["principal"] = user("alice")
