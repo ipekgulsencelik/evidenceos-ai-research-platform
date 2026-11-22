@@ -5,6 +5,7 @@ single trust anchor; token-supplied jku, x5u, jwk, or alg cannot replace it.
 """
 
 import asyncio
+import json
 import time
 from typing import Any
 
@@ -37,23 +38,34 @@ class OidcAccessTokenVerifier:
         self._keys: dict[str, Any] = {}
         self._expires_at = 0.0
         self._next_unknown_kid_refresh = 0.0
+        self._retry_after = 0.0
         self._lock = asyncio.Lock()
 
     async def _refresh_keys(self, *, force: bool = False) -> None:
         async with self._lock:
             now = time.monotonic()
+            if now < self._retry_after:
+                raise OidcProviderUnavailable("OIDC key retrieval is backing off")
             if force and now < self._next_unknown_kid_refresh:
                 return
             if not force and now < self._expires_at:
                 return
+            if force:
+                # Throttle *attempts*, including unsuccessful unknown-kid fetches.
+                self._next_unknown_kid_refresh = now + 30.0
             try:
-                response = await self._client.get(
-                    self._jwks_url, follow_redirects=False, timeout=5.0
-                )
-                response.raise_for_status()
-                if len(response.content) > 65536:
-                    raise ValueError("JWKS exceeds size limit")
-                data = response.json()
+                # Streaming enforces the cap BEFORE buffering/decompressing the
+                # whole response, including providers with no Content-Length.
+                async with self._client.stream(
+                    "GET", self._jwks_url, follow_redirects=False, timeout=5.0
+                ) as response:
+                    response.raise_for_status()
+                    chunks = bytearray()
+                    async for chunk in response.aiter_bytes(chunk_size=8192):
+                        if len(chunks) + len(chunk) > 65536:
+                            raise ValueError("JWKS exceeds size limit")
+                        chunks.extend(chunk)
+                data = json.loads(chunks)
                 if not isinstance(data, dict):
                     raise ValueError("invalid JWKS")
                 keys = data.get("keys")
@@ -80,12 +92,13 @@ class OidcAccessTokenVerifier:
                 if not trusted:
                     raise ValueError("JWKS has no acceptable signing keys")
             except (httpx.HTTPError, ValueError, TypeError, KeyError, PyJWKError) as exc:
+                # Prevent a down or malformed JWKS endpoint being hammered by
+                # concurrent requests. Keep existing keys stale until refresh.
+                self._retry_after = time.monotonic() + 5.0
                 raise OidcProviderUnavailable("OIDC key retrieval failed") from exc
             self._keys = trusted
             self._expires_at = time.monotonic() + 300.0
-            if force:
-                # Unknown kids must not cause an IdP fetch on every bad request.
-                self._next_unknown_kid_refresh = time.monotonic() + 30.0
+            self._retry_after = 0.0
 
     async def verify(self, token: str) -> Principal:
         if not token or len(token) > 8192:
