@@ -20,8 +20,12 @@ from evidenceos.domain.ports.workspace import LiteratureRepository
 
 
 class FakeProjectRepository:
-    def __init__(self, store: dict[UUID, ResearchProject]) -> None:
+    def __init__(
+        self, store: dict[UUID, ResearchProject],
+        membership_roles: dict[tuple[UUID, str], ProjectRole] | None = None,
+    ) -> None:
         self._store = store
+        self._membership_roles = membership_roles if membership_roles is not None else {}
         self._pending: dict[UUID, ResearchProject] = {}
 
     async def add(self, project: ResearchProject) -> None:
@@ -36,8 +40,12 @@ class FakeProjectRepository:
     async def list_for_principal(
         self, principal_key: str, *, limit: int = 50
     ) -> list[ResearchProject]:
-        # A replacement is injected by FakeUnitOfWork during enter in policy tests.
-        return sorted(self._store.values(), key=lambda row: row.created_at, reverse=True)[:limit]
+        return sorted(
+            (
+                row for row in self._store.values()
+                if (row.id, principal_key) in self._membership_roles
+            ), key=lambda row: row.created_at, reverse=True,
+        )[:limit]
 
     def flush(self) -> None:
         self._store.update(self._pending)
@@ -143,12 +151,12 @@ class FakeUnitOfWork:
         memberships: FakeMembershipRepository | None = None,
         access_audit: FakeAccessAuditRepository | None = None,
     ) -> None:
-        self._projects = FakeProjectRepository(store)
+        self._memberships = memberships if memberships is not None else FakeMembershipRepository()
+        self._projects = FakeProjectRepository(store, self._memberships.rows)
         self.committed = False
         self._literature = literature if literature is not None else FakeLiteratureRepository()
         self._library = library if library is not None else FakeLibraryRepository()
         self._quality = quality if quality is not None else FakeQualityRepository()
-        self._memberships = memberships if memberships is not None else FakeMembershipRepository()
         self._access_audit = access_audit if access_audit is not None else FakeAccessAuditRepository()
 
     @property
