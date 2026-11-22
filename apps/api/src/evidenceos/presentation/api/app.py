@@ -148,14 +148,13 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     async def handle_document_input(request: Request, exc: ValueError) -> JSONResponse:
         return JSONResponse(status_code=422, content={"detail": str(exc)})
 
-    # Every research route is protected at composition, before handlers run.
-    # Health probes are deliberately public for container orchestration.
-    protected = [Depends(validate_service_credential), Depends(require_project_access)]
+    # Keep identity verification on all research routes, but do not construct
+    # a database UoW for stateless routes with no project identifier.
+    authenticated = [Depends(validate_service_credential)]
+    project_scoped = [Depends(validate_service_credential), Depends(require_project_access)]
+    for router in (literature_router, document_router, evidence_router, academic_router):
+        app.include_router(router, prefix="/api/v1", dependencies=authenticated)
     for router in (
-        literature_router,
-        document_router,
-        evidence_router,
-        academic_router,
         projects_router,
         workspace_router,
         library_router,
@@ -164,7 +163,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         quality_router,
         access_router,
     ):
-        app.include_router(router, prefix="/api/v1", dependencies=protected)
+        app.include_router(router, prefix="/api/v1", dependencies=project_scoped)
+    # Health probes are deliberately public for container orchestration.
     app.include_router(health_router, prefix="/api/v1")
     return app
 
