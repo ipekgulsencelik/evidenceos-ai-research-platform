@@ -50,7 +50,8 @@ def profile(sha: str, *, has_sample: bool = True) -> LiteratureProfile:
             "Sample reported",
             "Sample: 180 students aged 15 to 18.",
             "PDF page 2",
-        ) if has_sample and item.facet is LiteratureFacet.SAMPLE
+        )
+        if has_sample and item.facet is LiteratureFacet.SAMPLE
         else LiteratureFinding(item.facet, FindingStatus.NOT_IDENTIFIED, None, None, None)
         for item in original.findings
     )
@@ -99,6 +100,7 @@ async def seed() -> tuple[
 async def test_semantic_source_integrity_and_consent() -> None:
     project, _, a, b, projects, saved = await seed()
     analyst = FakeAnalyst()
+
     def factory() -> FakeUnitOfWork:
         return FakeUnitOfWork(projects, saved)
 
@@ -130,6 +132,7 @@ async def test_semantic_source_integrity_and_consent() -> None:
 async def test_model_made_up_citations_and_duplicates_are_discarded() -> None:
     project, _, a, b, projects, saved = await seed()
     analyst = FakeAnalyst()
+
     def factory() -> FakeUnitOfWork:
         return FakeUnitOfWork(projects, saved)
 
@@ -171,6 +174,7 @@ async def test_missing_paired_evidence_never_calls_external_model() -> None:
         profile=profile("b", has_sample=False),
     )
     analyst = FakeAnalyst()
+
     def factory() -> FakeUnitOfWork:
         return FakeUnitOfWork(projects, saved)
 
@@ -186,6 +190,7 @@ async def test_missing_paired_evidence_never_calls_external_model() -> None:
 async def test_cross_project_and_duplicate_document_blocked_before_model() -> None:
     project, other, a, b, projects, saved = await seed()
     analyst = FakeAnalyst()
+
     def factory() -> FakeUnitOfWork:
         return FakeUnitOfWork(projects, saved)
 
@@ -212,32 +217,38 @@ async def test_groq_adapter_uses_only_quotes_and_validated_json() -> None:
     def handler(request: httpx.Request) -> httpx.Response:
         payload = json.loads(request.content)
         requests.append(payload)
+        comparison = {
+            "dimension": "population",
+            "kind": "possible_difference",
+            "summary": "The quoted groups may differ in age.",
+            "research_question": "Are age groups comparable?",
+            "reference_ids": ["s1:sample", "s2:sample"],
+        }
+        content = json.dumps({"comparisons": [comparison]})
         return httpx.Response(
             200,
-            json={
-                "choices": [{
-                    "message": {
-                        "content": json.dumps({
-                            "comparisons": [{
-                                "dimension": "population",
-                                "kind": "possible_difference",
-                                "summary": "The quoted groups may differ in age.",
-                                "research_question": "Are age groups comparable?",
-                                "reference_ids": ["s1:sample", "s2:sample"],
-                            }]
-                        })
-                    }
-                }]
-            },
+            json={"choices": [{"message": {"content": content}}]},
         )
 
     async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
         analyst = GroqSemanticGapAnalyst(client, "test-key", "test-model")
         quotes = (
-            SemanticExcerpt("s1:sample", uuid4(), "A", SemanticDimension.POPULATION,
-                            "PDF page 1", "Adolescents aged 12 to 14"),
-            SemanticExcerpt("s2:sample", uuid4(), "B", SemanticDimension.POPULATION,
-                            "PDF page 2", "Adolescents aged 15 to 18"),
+            SemanticExcerpt(
+                "s1:sample",
+                uuid4(),
+                "A",
+                SemanticDimension.POPULATION,
+                "PDF page 1",
+                "Adolescents aged 12 to 14",
+            ),
+            SemanticExcerpt(
+                "s2:sample",
+                uuid4(),
+                "B",
+                SemanticDimension.POPULATION,
+                "PDF page 2",
+                "Adolescents aged 15 to 18",
+            ),
         )
         result = await analyst.compare(quotes)
         assert result[0].kind is ComparisonKind.POSSIBLE_DIFFERENCE
@@ -256,18 +267,25 @@ async def test_groq_adapter_uses_only_quotes_and_validated_json() -> None:
 @pytest.mark.asyncio
 async def test_groq_adapter_rejects_invalid_output() -> None:
     async def bad_handler(request: httpx.Request) -> httpx.Response:
-        return httpx.Response(200, json={
-            "choices": [{"message": {"content": '{"comparisons":"invalid"}'}}]
-        })
+        return httpx.Response(
+            200, json={"choices": [{"message": {"content": '{"comparisons":"invalid"}'}}]}
+        )
 
     async with httpx.AsyncClient(transport=httpx.MockTransport(bad_handler)) as client:
         analyst = GroqSemanticGapAnalyst(client, "test-key")
         with pytest.raises(EvidenceProviderFailure):
-            await analyst.compare((
-                SemanticExcerpt("s1:sample", uuid4(), "A", SemanticDimension.POPULATION,
-                                "PDF page 1", "Population is described"),
-            ))
-
+            await analyst.compare(
+                (
+                    SemanticExcerpt(
+                        "s1:sample",
+                        uuid4(),
+                        "A",
+                        SemanticDimension.POPULATION,
+                        "PDF page 1",
+                        "Population is described",
+                    ),
+                )
+            )
 
 @pytest.fixture
 def client() -> Iterator[TestClient]:
@@ -286,9 +304,7 @@ def client() -> Iterator[TestClient]:
             ("s1:sample", "s2:sample"),
         ),
     )
-    app.dependency_overrides[get_uow_factory] = lambda: (
-        lambda: FakeUnitOfWork(projects, literature)
-    )
+    app.dependency_overrides[get_uow_factory] = lambda: lambda: FakeUnitOfWork(projects, literature)
     app.dependency_overrides[get_semantic_analyst] = lambda: analyst
     with TestClient(app) as client:
         yield client
@@ -310,13 +326,9 @@ def test_semantic_http_requires_consent_and_returns_real_source_quote(client: Te
 
     a, b = anyio.run(create_entries)
     endpoint = f"/api/v1/projects/{project}/semantic-gaps"
-    denied = client.post(endpoint, json={
-        "entry_ids": [a, b], "consent_to_share_quotes": False
-    })
+    denied = client.post(endpoint, json={"entry_ids": [a, b], "consent_to_share_quotes": False})
     assert denied.status_code == 422
-    response = client.post(endpoint, json={
-        "entry_ids": [a, b], "consent_to_share_quotes": True
-    })
+    response = client.post(endpoint, json={"entry_ids": [a, b], "consent_to_share_quotes": True})
     assert response.status_code == 200, response.text
     result = response.json()
     assert result["candidates"][0]["references"][0]["quote"] == (

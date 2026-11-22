@@ -30,9 +30,7 @@ _CAVEAT = (
 
 
 class CompareSemanticEvidence:
-    def __init__(
-        self, uow_factory: UnitOfWorkFactory, analyst: SemanticGapAnalyst
-    ) -> None:
+    def __init__(self, uow_factory: UnitOfWorkFactory, analyst: SemanticGapAnalyst) -> None:
         self._uow_factory = uow_factory
         self._analyst = analyst
 
@@ -91,8 +89,7 @@ class CompareSemanticEvidence:
             ids = proposal.reference_ids
             refs = [source_index.get(ref_id) for ref_id in ids]
             correct = [
-                ref for ref in refs
-                if ref is not None and ref.dimension is proposal.dimension
+                ref for ref in refs if ref is not None and ref.dimension is proposal.dimension
             ]
             if (
                 proposal.dimension not in sufficient
