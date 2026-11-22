@@ -21,7 +21,8 @@ from evidenceos.domain.ports.workspace import LiteratureRepository
 
 class FakeProjectRepository:
     def __init__(
-        self, store: dict[UUID, ResearchProject],
+        self,
+        store: dict[UUID, ResearchProject],
         membership_roles: dict[tuple[UUID, str], ProjectRole] | None = None,
     ) -> None:
         self._store = store
@@ -42,9 +43,12 @@ class FakeProjectRepository:
     ) -> list[ResearchProject]:
         return sorted(
             (
-                row for row in self._store.values()
+                row
+                for row in self._store.values()
                 if (row.id, principal_key) in self._membership_roles
-            ), key=lambda row: row.created_at, reverse=True,
+            ),
+            key=lambda row: row.created_at,
+            reverse=True,
         )[:limit]
 
     def flush(self) -> None:
@@ -110,9 +114,7 @@ class FakeQualityRepository:
 
 
 class FakeMembershipRepository:
-    def __init__(
-        self, rows: dict[tuple[UUID, str], ProjectRole] | None = None
-    ) -> None:
+    def __init__(self, rows: dict[tuple[UUID, str], ProjectRole] | None = None) -> None:
         self.rows = rows if rows is not None else {}
 
     async def role_for(self, project_id: UUID, principal_key: str) -> ProjectRole | None:
@@ -121,13 +123,10 @@ class FakeMembershipRepository:
     async def upsert(self, membership: ProjectMembership) -> None:
         self.rows[(membership.project_id, membership.principal_key)] = membership.role
 
-    async def project_ids_for(
-        self, principal_key: str, *, limit: int = 50
-    ) -> list[UUID]:
-        return [
-            project_id for (project_id, key), _ in self.rows.items()
-            if key == principal_key
-        ][:limit]
+    async def project_ids_for(self, principal_key: str, *, limit: int = 50) -> list[UUID]:
+        return [project_id for (project_id, key), _ in self.rows.items() if key == principal_key][
+            :limit
+        ]
 
 
 class FakeAccessAuditRepository:
