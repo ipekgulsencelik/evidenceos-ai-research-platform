@@ -54,14 +54,18 @@ class OidcAccessTokenVerifier:
                 # Throttle *attempts*, including unsuccessful unknown-kid fetches.
                 self._next_unknown_kid_refresh = now + 30.0
             try:
-                # Streaming enforces the cap BEFORE buffering/decompressing the
-                # whole response, including providers with no Content-Length.
+                # Stream bounded raw bytes without automatic decompression.
+                # A provider ignoring identity encoding fails closed at JSON parse.
                 async with self._client.stream(
-                    "GET", self._jwks_url, follow_redirects=False, timeout=5.0
+                    "GET",
+                    self._jwks_url,
+                    headers={"Accept-Encoding": "identity", "Accept": "application/json"},
+                    follow_redirects=False,
+                    timeout=5.0,
                 ) as response:
                     response.raise_for_status()
                     chunks = bytearray()
-                    async for chunk in response.aiter_bytes(chunk_size=8192):
+                    async for chunk in response.aiter_raw(chunk_size=8192):
                         if len(chunks) + len(chunk) > 65536:
                             raise ValueError("JWKS exceeds size limit")
                         chunks.extend(chunk)
