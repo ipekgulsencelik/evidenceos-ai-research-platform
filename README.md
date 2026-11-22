@@ -143,3 +143,16 @@ Do not deploy this single-operator proof of concept to the public internet.
 
 Configuration, migration-safe instructions, validation, and remaining security
 work: [Security Foundation](docs/security-foundation.md).
+
+## Project RBAC and access-decision audit foundation
+
+An additive Alembic **0005** migration defines project membership roles
+(owner/editor/reviewer/viewer), project-aware authorization policies, scoped
+project listings and pseudonymous access-decision records. In future OIDC
+mode, legacy projects will **not** be implicitly claimed by a new user.
+Current local and service-token modes remain **single operator** and are
+not equivalent to end-user sign-in or per-user isolation.
+
+This does **not** implement OIDC, browser sessions or production-ready
+multi-user security. Review the scope, role policy and migration safety
+notes in [docs/project-rbac-audit-foundation.md](docs/project-rbac-audit-foundation.md).
