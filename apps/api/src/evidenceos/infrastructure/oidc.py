@@ -36,11 +36,15 @@ class OidcAccessTokenVerifier:
         self._client = client
         self._keys: dict[str, Any] = {}
         self._expires_at = 0.0
+        self._next_unknown_kid_refresh = 0.0
         self._lock = asyncio.Lock()
 
     async def _refresh_keys(self, *, force: bool = False) -> None:
         async with self._lock:
-            if not force and time.monotonic() < self._expires_at:
+            now = time.monotonic()
+            if force and now < self._next_unknown_kid_refresh:
+                return
+            if not force and now < self._expires_at:
                 return
             try:
                 response = await self._client.get(
@@ -79,6 +83,9 @@ class OidcAccessTokenVerifier:
                 raise OidcProviderUnavailable("OIDC key retrieval failed") from exc
             self._keys = trusted
             self._expires_at = time.monotonic() + 300.0
+            if force:
+                # Unknown kids must not cause an IdP fetch on every bad request.
+                self._next_unknown_kid_refresh = time.monotonic() + 30.0
 
     async def verify(self, token: str) -> Principal:
         if not token or len(token) > 8192:
