@@ -334,9 +334,7 @@ def test_signed_oidc_users_can_grant_and_revoke_scoped_project_access(
     app.dependency_overrides[get_uow_factory] = lambda: factory
     owner_token = signed_token(private_key, {"sub": "owner"})
     member_token = signed_token(private_key, {"sub": "member"})
-    forged_audience = signed_token(
-        private_key, {"sub": "owner", "aud": "untrusted-web-client"}
-    )
+    forged_audience = signed_token(private_key, {"sub": "owner", "aud": "untrusted-web-client"})
     owner_headers = {"Authorization": "Bearer " + owner_token}
     member_headers = {"Authorization": "Bearer " + member_token}
     member_key = stable_subject_key(ISSUER, "member")
@@ -345,18 +343,24 @@ def test_signed_oidc_users_can_grant_and_revoke_scoped_project_access(
     with TestClient(app) as client:
         app.state.oidc_verifier = OidcAccessTokenVerifier(oidc_settings(), mock_client(jwks))
         assert client.get("/api/v1/identity", headers=owner_headers).json() == {
-            "principal_key": owner_key, "kind": "oidc_user"
+            "principal_key": owner_key,
+            "kind": "oidc_user",
         }
         assert client.get("/api/v1/identity", headers=member_headers).json() == {
-            "principal_key": member_key, "kind": "oidc_user"
+            "principal_key": member_key,
+            "kind": "oidc_user",
         }
         assert client.get("/api/v1/identity").status_code == 401
-        assert client.get(
-            "/api/v1/identity", headers={"Authorization": "Bearer " + forged_audience}
-        ).status_code == 401
+        assert (
+            client.get(
+                "/api/v1/identity", headers={"Authorization": "Bearer " + forged_audience}
+            ).status_code
+            == 401
+        )
 
         created = client.post(
-            "/api/v1/projects", headers=owner_headers,
+            "/api/v1/projects",
+            headers=owner_headers,
             json={"title": "Signed OIDC team isolation", "domain": "academic"},
         )
         assert created.status_code == 201, created.text
@@ -370,9 +374,12 @@ def test_signed_oidc_users_can_grant_and_revoke_scoped_project_access(
         # verified JWT.
         attacker_headers = {**member_headers, "x-principal-key": owner_key}
         assert client.get(members_path, headers=attacker_headers).status_code == 404
-        assert client.put(
-            f"{members_path}/{owner_key}", headers=owner_headers, json={"role": "viewer"}
-        ).status_code == 409
+        assert (
+            client.put(
+                f"{members_path}/{owner_key}", headers=owner_headers, json={"role": "viewer"}
+            ).status_code
+            == 409
+        )
 
         grant = client.put(
             f"{members_path}/{member_key}", headers=owner_headers, json={"role": "viewer"}
@@ -380,9 +387,12 @@ def test_signed_oidc_users_can_grant_and_revoke_scoped_project_access(
         assert grant.status_code == 200, grant.text
         assert client.get(project_path, headers=member_headers).status_code == 200
         assert client.get(members_path, headers=member_headers).status_code == 404
-        assert client.put(
-            f"{members_path}/{owner_key}", headers=member_headers, json={"role": "owner"}
-        ).status_code == 404
+        assert (
+            client.put(
+                f"{members_path}/{owner_key}", headers=member_headers, json={"role": "owner"}
+            ).status_code
+            == 404
+        )
 
         removed = client.delete(f"{members_path}/{member_key}", headers=owner_headers)
         assert removed.status_code == 204
