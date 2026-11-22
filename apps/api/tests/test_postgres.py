@@ -282,9 +282,7 @@ async def test_postgres_owner_membership_grant_listing_and_revocation() -> None:
         assert granted.role is ProjectRole.REVIEWER
         assigned_members = await admin.list_members(alice, project.id)
         listed_roles = {row.principal_key: row.role for row in assigned_members}
-        assert listed_roles == {
-            alice.key: ProjectRole.OWNER, bob.key: ProjectRole.REVIEWER
-        }
+        assert listed_roles == {alice.key: ProjectRole.OWNER, bob.key: ProjectRole.REVIEWER}
         with pytest.raises(ProjectNotFound):
             await admin.assign(bob, project.id, outsider.key, ProjectRole.VIEWER)
         with pytest.raises(InvalidMembershipChange):
