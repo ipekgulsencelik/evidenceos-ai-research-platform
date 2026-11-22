@@ -86,9 +86,7 @@ def mock_client(
         if calls is not None:
             calls.append(str(request.url))
         assert str(request.url) == JWKS_URL
-        return httpx.Response(
-            status, stream=httpx.ByteStream(json.dumps(jwks).encode("utf-8"))
-        )
+        return httpx.Response(status, stream=httpx.ByteStream(json.dumps(jwks).encode("utf-8")))
 
     return httpx.AsyncClient(transport=httpx.MockTransport(handle))
 
@@ -253,9 +251,7 @@ async def test_failed_unknown_kid_refresh_uses_cooldown(
     def handle(request: httpx.Request) -> httpx.Response:
         calls.append(str(request.url))
         if len(calls) == 1:
-            return httpx.Response(
-                200, stream=httpx.ByteStream(json.dumps(jwks).encode("utf-8"))
-            )
+            return httpx.Response(200, stream=httpx.ByteStream(json.dumps(jwks).encode("utf-8")))
         return httpx.Response(503)
 
     async with httpx.AsyncClient(transport=httpx.MockTransport(handle)) as client:
