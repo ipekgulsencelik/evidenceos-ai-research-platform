@@ -25,7 +25,9 @@ class CreateProject:
         self._uow_factory = uow_factory
 
     async def execute(
-        self, command: CreateProjectCommand, actor: Principal | None = None,
+        self,
+        command: CreateProjectCommand,
+        actor: Principal | None = None,
         request_id: str = "",
     ) -> ResearchProject:
         project = ResearchProject.create(title=command.title, domain=command.domain)
