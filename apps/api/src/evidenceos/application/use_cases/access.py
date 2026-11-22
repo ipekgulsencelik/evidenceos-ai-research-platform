@@ -126,7 +126,11 @@ class ManageProjectMemberships:
         async with self._factory() as uow:
             await self._ensure_owner(uow, actor, project_id, request_id)
             existing = await uow.memberships.role_for(project_id, member_key)
-            if role is ProjectRole.OWNER or existing is ProjectRole.OWNER or member_key == actor.key:
+            if (
+                role is ProjectRole.OWNER
+                or existing is ProjectRole.OWNER
+                or member_key == actor.key
+            ):
                 raise InvalidMembershipChange(
                     "Owner memberships cannot be changed through this endpoint"
                 )
