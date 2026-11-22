@@ -287,6 +287,7 @@ async def test_groq_adapter_rejects_invalid_output() -> None:
                 )
             )
 
+
 @pytest.fixture
 def client() -> Iterator[TestClient]:
     app = create_app(
