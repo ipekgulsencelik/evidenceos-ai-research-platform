@@ -25,7 +25,6 @@ class Settings(BaseSettings):
     groq_model: str = "openai/gpt-oss-20b"
     research_timeout_seconds: float = Field(default=8.0, ge=1.0, le=30.0)
 
-
     @model_validator(mode="after")
     def validate_security(self) -> Self:
         """Never start in production with an unprotected API."""
