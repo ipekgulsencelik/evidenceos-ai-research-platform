@@ -34,10 +34,8 @@ from evidenceos.infrastructure.providers.groq_evidence import (
 from evidenceos.infrastructure.providers.pypdf_document import InvalidPdfDocument, PdfTooLarge
 from evidenceos.presentation.api.access import require_project_access
 from evidenceos.presentation.api.routes.academic import router as academic_router
-from evidenceos.presentation.api.routes.access import (
-    identity_router,
-    router as access_router,
-)
+from evidenceos.presentation.api.routes.access import identity_router
+from evidenceos.presentation.api.routes.access import router as access_router
 from evidenceos.presentation.api.routes.document import router as document_router
 from evidenceos.presentation.api.routes.evidence import router as evidence_router
 from evidenceos.presentation.api.routes.health import router as health_router
