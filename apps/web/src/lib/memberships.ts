@@ -28,3 +28,12 @@ export function isProjectMember(data: unknown): data is ProjectMember {
     (value.role === "owner" || isAssignableRole(value.role)) &&
     typeof value.created_at === "string";
 }
+
+/** Only a verified OIDC principal can be shared to grant another user's access.
+ * Local/service operators are administrative credentials, not human accounts.
+ */
+export function isOidcIdentity(identity: VerifiedIdentity | null): identity is VerifiedIdentity {
+  return identity !== null &&
+    identity.kind === "oidc_user" &&
+    isMemberKey(identity.principal_key);
+}
