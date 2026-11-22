@@ -92,3 +92,14 @@ append-only reviewer revisions in PostgreSQL. PDF binaries are not saved.
 Requires the additive 0002 Alembic migration (Docker Compose handles it).
 This is localhost-only: no authentication or access control. See
 docs/research-workspace.md for workflow, privacy limits and API contracts.
+
+
+## Research Library and Evidence Coverage Comparison
+
+Within a selected academic project, Research Library lets you search the
+newest 100 saved analysis snapshots, add persisted tags/reading statuses,
+and compare 2–10 distinct PDFs using source-quoted extracted fields.
+The "gap" output is a **manual verification candidate**, not a scientific
+claim that the literature lacks evidence. No extra AI call is made by the
+comparison. Migration 0003 adds metadata without altering existing records.
+See docs/research-library-gap-analysis.md for scope and privacy limits.
