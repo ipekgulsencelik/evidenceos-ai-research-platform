@@ -2,7 +2,8 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
-  createSessionId, RedisSessionRegistry, sessionRegistryConfigured, sessionRegistryKey,
+  createSessionId, RedisSessionRegistry, sessionReconnectDelay, sessionRegistryConfigured,
+  sessionRegistryKey,
 } from "./session-registry.ts";
 
 type Store = ConstructorParameters<typeof RedisSessionRegistry>[0];
@@ -83,4 +84,15 @@ test("OIDC store requires strong password and secure production transport", () =
     if (oldEnv === undefined) delete process.env.EVIDENCEOS_APP_ENV;
     else process.env.EVIDENCEOS_APP_ENV = oldEnv;
   }
+});
+
+test("reconnect delay never abandons recovery, even after long Redis outages", () => {
+  assert.equal(sessionReconnectDelay(0), 250);
+  assert.equal(sessionReconnectDelay(1), 500);
+  assert.equal(sessionReconnectDelay(2), 1000);
+  assert.equal(sessionReconnectDelay(3), 2000);
+  assert.equal(sessionReconnectDelay(4), 4000);
+  assert.equal(sessionReconnectDelay(5), 8000);
+  assert.equal(sessionReconnectDelay(1000), 8000);
+  assert.equal(typeof sessionReconnectDelay(1000), "number");
 });
