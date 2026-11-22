@@ -12,6 +12,7 @@ import { cookies } from "next/headers";
 
 import { browserOidcSettings } from "./oidc-client";
 import { SESSION_COOKIE, readSession } from "./oidc-session";
+import { getSessionRegistry } from "./session-registry";
 import { securityEnabled } from "./security";
 
 type BackendPayload =
@@ -44,6 +45,12 @@ export async function callBackend(path: string, init?: RequestInit): Promise<Gat
     const session = readSession(cookieStore.get(SESSION_COOKIE)?.value);
     if (!session) {
       return { status: 401, body: { detail: "Authentication required." } };
+    }
+    try {
+      const valid = await (await getSessionRegistry()).isActive(session.sid);
+      if (!valid) return { status: 401, body: { detail: "Authentication required." } };
+    } catch {
+      return { status: 503, body: { detail: "Session verification temporarily unavailable." } };
     }
     token = session.accessToken;
   } else {
