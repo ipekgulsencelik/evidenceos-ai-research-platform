@@ -35,7 +35,8 @@ class ProjectMembershipRow(Base):
     )
 
     project_id: Mapped[UUID] = mapped_column(
-        Uuid(as_uuid=True), ForeignKey("research_projects.id", ondelete="CASCADE"),
+        Uuid(as_uuid=True),
+        ForeignKey("research_projects.id", ondelete="CASCADE"),
         primary_key=True,
     )
     principal_key: Mapped[str] = mapped_column(String(64), primary_key=True)
@@ -47,7 +48,8 @@ class AccessDecisionRow(Base):
     __tablename__ = "access_decision_events"
     __table_args__ = (
         CheckConstraint(
-            "outcome IN ('allowed', 'denied')", name="ck_access_decision_outcome",
+            "outcome IN ('allowed', 'denied')",
+            name="ck_access_decision_outcome",
         ),
         Index("ix_access_decisions_project_time", "project_id", "created_at"),
         Index("ix_access_decisions_actor_time", "actor_key", "created_at"),
