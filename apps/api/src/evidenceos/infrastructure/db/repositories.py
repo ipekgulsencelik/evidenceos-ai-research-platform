@@ -130,11 +130,16 @@ class SqlAlchemyMembershipRepository:
         result = await self._session.scalars(
             select(ProjectMembershipRow)
             .where(ProjectMembershipRow.project_id == project_id)
-            .order_by(ProjectMembershipRow.created_at.asc(), ProjectMembershipRow.principal_key.asc())
+            .order_by(
+                ProjectMembershipRow.created_at.asc(),
+                ProjectMembershipRow.principal_key.asc(),
+            )
             .limit(limit)
         )
         return [
-            ProjectMembership(row.project_id, row.principal_key, ProjectRole(row.role), row.created_at)
+            ProjectMembership(
+                row.project_id, row.principal_key, ProjectRole(row.role), row.created_at
+            )
             for row in result.all()
         ]
 
