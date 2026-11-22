@@ -13,12 +13,7 @@ export default function HomePage() {
           gap: 12, padding: "8px 16px", background: "#14283e", color: "#fff",
         }}>
           <span style={{ fontSize: 12 }}>Authenticated research session</span>
-          <form action="/auth/logout" method="POST">
-            <button type="submit" style={{
-              padding: "5px 12px", border: "1px solid #a3b5c5",
-              borderRadius: 6, background: "transparent", color: "#fff", cursor: "pointer",
-            }}>Sign out</button>
-          </form>
+          <SignOutButton />
         </header>
       )}
       <ResearchWorkspace />
