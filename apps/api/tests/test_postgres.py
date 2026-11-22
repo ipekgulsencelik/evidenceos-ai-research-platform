@@ -280,7 +280,8 @@ async def test_postgres_owner_membership_grant_listing_and_revocation() -> None:
 
         granted = await admin.assign(alice, project.id, bob.key, ProjectRole.REVIEWER)
         assert granted.role is ProjectRole.REVIEWER
-        listed_roles = {row.principal_key: row.role for row in await admin.list_members(alice, project.id)}
+        assigned_members = await admin.list_members(alice, project.id)
+        listed_roles = {row.principal_key: row.role for row in assigned_members}
         assert listed_roles == {
             alice.key: ProjectRole.OWNER, bob.key: ProjectRole.REVIEWER
         }
