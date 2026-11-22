@@ -99,6 +99,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Validate Compose and protected Redis service
+        run: |
+          cp .env.example .env
+          trap 'docker compose down --remove-orphans' EXIT
+          docker compose config --quiet
+          docker compose up -d --wait redis
+          docker compose exec -T redis sh -c 'REDISCLI_AUTH="$REDIS_PASSWORD" redis-cli ping | grep -q PONG'
+          docker compose exec -T redis sh -c 'redis-cli ping | grep -q NOAUTH'
       - name: Build API image
         run: docker build -t evidenceos-api:ci apps/api
       - name: Build Web image
