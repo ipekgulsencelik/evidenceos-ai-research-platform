@@ -156,3 +156,16 @@ not equivalent to end-user sign-in or per-user isolation.
 This does **not** implement OIDC, browser sessions or production-ready
 multi-user security. Review the scope, role policy and migration safety
 notes in [docs/project-rbac-audit-foundation.md](docs/project-rbac-audit-foundation.md).
+
+## OIDC resource-server verification (API-only preview)
+
+A new optional `EVIDENCEOS_SECURITY_MODE=oidc` allows FastAPI to validate
+RS256 JWT access tokens from a configured HTTPS issuer/JWKS endpoint, check
+audience and expiry, and use the verified subject for project-scoped RBAC.
+It does **not** implement user login, browser sessions, PKCE or logout.
+
+For safety, the Next.js web application explicitly **returns 503** in this
+mode until a maintained OAuth2/OIDC browser login and session workflow is
+implemented. Continue using the existing localhost modes for the current UI.
+Never expose the prototype as a public multi-user production service.
+See [OIDC resource-server guide](docs/oidc-resource-server.md).

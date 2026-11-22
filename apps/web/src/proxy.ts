@@ -10,6 +10,15 @@ import {
 } from "./lib/security";
 
 export function proxy(request: NextRequest): NextResponse {
+  // Backend OIDC verification is not a browser session. Do not let Basic Auth
+  // impersonate an OIDC user or silently expose API access without PKCE login.
+  if (process.env.EVIDENCEOS_SECURITY_MODE === "oidc") {
+    return new NextResponse("OIDC browser login is not configured.", {
+      status: 503,
+      headers: { "Cache-Control": "no-store" },
+    });
+  }
+
   if (!securityEnabled(process.env.EVIDENCEOS_APP_ENV, process.env.EVIDENCEOS_SECURITY_MODE)) {
     return NextResponse.next();
   }

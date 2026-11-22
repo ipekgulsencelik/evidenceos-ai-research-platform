@@ -17,6 +17,7 @@ test("local mode retains existing workflow but production never silently disable
   assert.equal(securityEnabled("development", "local"), false);
   assert.equal(securityEnabled("test", "local"), false);
   assert.equal(securityEnabled("development", "service_token"), true);
+  assert.equal(securityEnabled("development", "oidc"), true);
   assert.equal(securityEnabled("production", "local"), true);
 });
 

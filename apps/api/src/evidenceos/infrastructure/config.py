@@ -2,6 +2,7 @@
 
 from functools import lru_cache
 from typing import Literal, Self
+from urllib.parse import urlsplit
 
 from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -15,8 +16,11 @@ class Settings(BaseSettings):
     )
 
     app_env: Literal["development", "test", "production"] = "development"
-    security_mode: Literal["local", "service_token"] = "local"
+    security_mode: Literal["local", "service_token", "oidc"] = "local"
     api_service_token: str | None = None
+    oidc_issuer: str | None = None
+    oidc_audience: str | None = None
+    oidc_jwks_url: str | None = None
     database_url: str = Field(min_length=1)
     cors_origins: list[str] = Field(default_factory=list)
     openalex_api_key: str | None = None
@@ -28,12 +32,29 @@ class Settings(BaseSettings):
     @model_validator(mode="after")
     def validate_security(self) -> Self:
         """Never start in production with an unprotected API."""
-        if self.app_env == "production" and self.security_mode != "service_token":
-            raise ValueError("production requires service_token security mode")
+        if self.app_env == "production" and self.security_mode == "local":
+            raise ValueError("production requires authenticated security mode")
         if self.security_mode == "service_token" and (
             self.api_service_token is None or len(self.api_service_token) < 32
         ):
             raise ValueError("service_token mode requires a token of at least 32 characters")
+        if self.security_mode == "oidc":
+            if not all((self.oidc_issuer, self.oidc_audience, self.oidc_jwks_url)):
+                raise ValueError("oidc requires issuer, API audience, and trusted JWKS URL")
+            if len(self.oidc_audience or "") > 256:
+                raise ValueError("invalid OIDC API audience")
+            for url in (self.oidc_issuer, self.oidc_jwks_url):
+                parsed = urlsplit(url or "")
+                if (
+                    parsed.scheme != "https"
+                    or not parsed.hostname
+                    or parsed.username is not None
+                    or parsed.password is not None
+                    or parsed.query
+                    or parsed.fragment
+                    or len(url or "") > 2048
+                ):
+                    raise ValueError("OIDC endpoints must be trusted HTTPS URLs")
         return self
 
 
