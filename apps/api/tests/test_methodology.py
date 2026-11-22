@@ -82,9 +82,7 @@ class FakeAnalyst:
         return self.result
 
 
-async def seed() -> tuple[
-    UUID, UUID, UUID, dict[UUID, ResearchProject], FakeLiteratureRepository
-]:
+async def seed() -> tuple[UUID, UUID, UUID, dict[UUID, ResearchProject], FakeLiteratureRepository]:
     projects: dict[UUID, ResearchProject] = {}
     records = FakeLiteratureRepository()
 
@@ -231,20 +229,26 @@ async def test_groq_adapter_sends_only_selected_quotations() -> None:
     def handler(request: httpx.Request) -> httpx.Response:
         value = json.loads(request.content)
         captured.append(value)
-        content = json.dumps({
-            "observations": [{
-                "aspect": "sampling",
-                "status": "needs_review",
-                "observation": "A convenience sample is reported.",
-                "review_question": "How representative are these participants?",
-                "reference_ids": ["f:sample"],
-            }]
-        })
+        content = json.dumps(
+            {
+                "observations": [
+                    {
+                        "aspect": "sampling",
+                        "status": "needs_review",
+                        "observation": "A convenience sample is reported.",
+                        "review_question": "How representative are these participants?",
+                        "reference_ids": ["f:sample"],
+                    }
+                ]
+            }
+        )
         return httpx.Response(200, json={"choices": [{"message": {"content": content}}]})
 
     quotes = (
         MethodologySource(
-            "f:sample", LiteratureFacet.SAMPLE, "PDF page 2",
+            "f:sample",
+            LiteratureFacet.SAMPLE,
+            "PDF page 2",
             "A convenience sample of 120 students was enrolled.",
         ),
     )
@@ -325,7 +329,10 @@ def test_methodology_api_consent_scope_and_source_response(client: TestClient) -
     second = client.post(
         "/api/v1/projects", json={"title": "Other project", "domain": "academic"}
     ).json()["id"]
-    assert client.post(
-        f"/api/v1/projects/{second}/literature/{entry_id}/methodology-review",
-        json={"consent_to_share_quotes": True},
-    ).status_code == 404
+    assert (
+        client.post(
+            f"/api/v1/projects/{second}/literature/{entry_id}/methodology-review",
+            json={"consent_to_share_quotes": True},
+        ).status_code
+        == 404
+    )
