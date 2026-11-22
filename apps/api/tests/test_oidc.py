@@ -242,7 +242,8 @@ async def test_jwks_stream_is_stopped_before_oversized_body_is_downloaded(
 
 @pytest.mark.asyncio
 async def test_failed_unknown_kid_refresh_uses_cooldown(
-    private_key: rsa.RSAPrivateKey, jwks: dict[str, Any],
+    private_key: rsa.RSAPrivateKey,
+    jwks: dict[str, Any],
 ) -> None:
     """Malicious unknown kids cannot hammer a failing IdP on every request."""
     calls: list[str] = []
