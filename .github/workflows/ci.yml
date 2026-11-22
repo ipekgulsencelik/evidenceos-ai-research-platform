@@ -88,6 +88,10 @@ jobs:
         run: npm install --no-audit --no-fund
       - name: Check TypeScript and unit tests
         run: npm run check
+      - name: Parse gated real-provider browser scenario
+        run: |
+          node --check e2e/oidc-provider.spec.mjs
+          node --check playwright.staging.config.mjs
       - name: Redis session integration
         run: npm run test:redis
         env:

@@ -1,0 +1,62 @@
+name: OIDC browser E2E (disposable staging)
+on:
+  workflow_dispatch:
+    inputs:
+      confirm_disposable_staging:
+        description: "I confirm the target has a disposable test database and two test accounts"
+        type: boolean
+        required: true
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: evidenceos-oidc-staging-e2e
+  cancel-in-progress: false
+
+jobs:
+  oidc-provider-e2e:
+    if: ${{ inputs.confirm_disposable_staging == true }}
+    runs-on: ubuntu-latest
+    environment: oidc-e2e
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: apps/web
+    env:
+      EVIDENCEOS_E2E_ORIGIN: ${{ vars.EVIDENCEOS_E2E_ORIGIN }}
+      EVIDENCEOS_E2E_USER_A: ${{ secrets.EVIDENCEOS_E2E_USER_A }}
+      EVIDENCEOS_E2E_PASSWORD_A: ${{ secrets.EVIDENCEOS_E2E_PASSWORD_A }}
+      EVIDENCEOS_E2E_USER_B: ${{ secrets.EVIDENCEOS_E2E_USER_B }}
+      EVIDENCEOS_E2E_PASSWORD_B: ${{ secrets.EVIDENCEOS_E2E_PASSWORD_B }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check disposable staging is explicitly configured
+        shell: bash
+        run: |
+          set -euo pipefail
+          for name in EVIDENCEOS_E2E_ORIGIN EVIDENCEOS_E2E_USER_A \
+            EVIDENCEOS_E2E_PASSWORD_A EVIDENCEOS_E2E_USER_B EVIDENCEOS_E2E_PASSWORD_B; do
+            if [[ -z "${!name}" ]]; then
+              echo "::error::Missing protected staging configuration: $name"
+              exit 1
+            fi
+          done
+          if [[ "$EVIDENCEOS_E2E_ORIGIN" != https://* ]]; then
+            echo "::error::A trusted HTTPS staging origin is mandatory."
+            exit 1
+          fi
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: apps/web/package-lock.json
+      - name: Install pinned application and ephemeral browser test dependencies
+        run: |
+          npm ci --no-audit --no-fund
+          npm install --no-save --package-lock=false --no-audit --no-fund @playwright/test@1.56.1
+      - name: Install Chromium with dependencies
+        run: npx playwright install --with-deps chromium
+      - name: Verify OIDC flow with two real provider accounts
+        run: npx playwright test --config playwright.staging.config.mjs
