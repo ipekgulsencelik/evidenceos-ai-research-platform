@@ -3,11 +3,12 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { browserOidcSettings } from "./lib/oidc-client";
 import { SESSION_COOKIE, readSession } from "./lib/oidc-session";
+import { getSessionRegistry } from "./lib/session-registry";
 import {
   isAuthorizedBasicHeader, securityEnabled, validSecurityConfiguration,
 } from "./lib/security";
 
-export function proxy(request: NextRequest): NextResponse {
+export async function proxy(request: NextRequest): Promise<NextResponse> {
   if (process.env.EVIDENCEOS_SECURITY_MODE === "oidc") {
     const settings = browserOidcSettings();
     if (!settings) return new NextResponse("OIDC browser sign-in is not configured.", {
@@ -21,7 +22,17 @@ export function proxy(request: NextRequest): NextResponse {
     if (path === "/auth/logout") return NextResponse.next();
 
     const session = readSession(request.cookies.get(SESSION_COOKIE)?.value);
-    if (!session) {
+    let authorized = false;
+    if (session) {
+      try {
+        authorized = await (await getSessionRegistry()).isActive(session.sid);
+      } catch {
+        return new NextResponse("Session verification temporarily unavailable.", {
+          status: 503, headers: { "Cache-Control": "no-store", "Retry-After": "5" },
+        });
+      }
+    }
+    if (!authorized) {
       if (path.startsWith("/api/")) return NextResponse.json(
         { detail: "Authentication required" },
         { status: 401, headers: { "Cache-Control": "no-store" } },
