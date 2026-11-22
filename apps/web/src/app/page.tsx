@@ -1,4 +1,5 @@
 import { ResearchWorkspace } from "@/components/research-workspace";
+import { SignOutButton } from "@/components/sign-out-button";
 
 // Evaluate OIDC mode at request time: Docker sets it when the container starts.
 export const dynamic = "force-dynamic";
