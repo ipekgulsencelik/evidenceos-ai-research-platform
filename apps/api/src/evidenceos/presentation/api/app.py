@@ -30,7 +30,9 @@ from evidenceos.infrastructure.providers.groq_evidence import (
     EvidenceProviderUnavailable,
 )
 from evidenceos.infrastructure.providers.pypdf_document import InvalidPdfDocument, PdfTooLarge
+from evidenceos.presentation.api.access import require_project_access
 from evidenceos.presentation.api.routes.academic import router as academic_router
+from evidenceos.presentation.api.routes.access import router as access_router
 from evidenceos.presentation.api.routes.document import router as document_router
 from evidenceos.presentation.api.routes.evidence import router as evidence_router
 from evidenceos.presentation.api.routes.health import router as health_router
@@ -146,22 +148,23 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     async def handle_document_input(request: Request, exc: ValueError) -> JSONResponse:
         return JSONResponse(status_code=422, content={"detail": str(exc)})
 
-    # Every research route is protected at composition, before handlers run.
-    # Health probes are deliberately public for container orchestration.
-    protected = [Depends(validate_service_credential)]
+    # Keep identity verification on all research routes, but do not construct
+    # a database UoW for stateless routes with no project identifier.
+    authenticated = [Depends(validate_service_credential)]
+    project_scoped = [Depends(validate_service_credential), Depends(require_project_access)]
+    for router in (literature_router, document_router, evidence_router, academic_router):
+        app.include_router(router, prefix="/api/v1", dependencies=authenticated)
     for router in (
-        literature_router,
-        document_router,
-        evidence_router,
-        academic_router,
         projects_router,
         workspace_router,
         library_router,
         semantic_router,
         methodology_router,
         quality_router,
+        access_router,
     ):
-        app.include_router(router, prefix="/api/v1", dependencies=protected)
+        app.include_router(router, prefix="/api/v1", dependencies=project_scoped)
+    # Health probes are deliberately public for container orchestration.
     app.include_router(health_router, prefix="/api/v1")
     return app
 

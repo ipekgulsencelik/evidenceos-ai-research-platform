@@ -6,6 +6,7 @@ from typing import Protocol
 from uuid import UUID
 
 from evidenceos.domain.entities.project import ResearchProject
+from evidenceos.domain.ports.access import AccessAuditRepository, MembershipRepository
 from evidenceos.domain.ports.library import LibraryRepository
 from evidenceos.domain.ports.quality import QualityReviewRepository
 from evidenceos.domain.ports.workspace import LiteratureRepository
@@ -17,6 +18,10 @@ class ProjectRepository(Protocol):
     async def get(self, project_id: UUID) -> ResearchProject | None: ...
 
     async def list_recent(self, *, limit: int = 50) -> list[ResearchProject]: ...
+
+    async def list_for_principal(
+        self, principal_key: str, *, limit: int = 50
+    ) -> list[ResearchProject]: ...
 
 
 class UnitOfWork(Protocol):
@@ -31,6 +36,12 @@ class UnitOfWork(Protocol):
 
     @property
     def quality(self) -> QualityReviewRepository: ...
+
+    @property
+    def memberships(self) -> MembershipRepository: ...
+
+    @property
+    def access_audit(self) -> AccessAuditRepository: ...
 
     async def __aenter__(self) -> "UnitOfWork": ...
 

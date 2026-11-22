@@ -3,10 +3,16 @@
 from types import TracebackType
 from uuid import UUID
 
+from evidenceos.domain.entities.access import (
+    AccessDecisionEvent,
+    ProjectMembership,
+    ProjectRole,
+)
 from evidenceos.domain.entities.library import LibraryMetadata
 from evidenceos.domain.entities.project import ResearchProject
 from evidenceos.domain.entities.quality import QualityDimension, QualityReviewRevision
 from evidenceos.domain.entities.workspace import LiteratureEntry, ReviewRevision
+from evidenceos.domain.ports.access import AccessAuditRepository, MembershipRepository
 from evidenceos.domain.ports.library import LibraryRepository
 from evidenceos.domain.ports.quality import QualityReviewRepository
 from evidenceos.domain.ports.repositories import ProjectRepository
@@ -14,8 +20,13 @@ from evidenceos.domain.ports.workspace import LiteratureRepository
 
 
 class FakeProjectRepository:
-    def __init__(self, store: dict[UUID, ResearchProject]) -> None:
+    def __init__(
+        self,
+        store: dict[UUID, ResearchProject],
+        membership_roles: dict[tuple[UUID, str], ProjectRole] | None = None,
+    ) -> None:
         self._store = store
+        self._membership_roles = membership_roles if membership_roles is not None else {}
         self._pending: dict[UUID, ResearchProject] = {}
 
     async def add(self, project: ResearchProject) -> None:
@@ -26,6 +37,19 @@ class FakeProjectRepository:
 
     async def list_recent(self, *, limit: int = 50) -> list[ResearchProject]:
         return sorted(self._store.values(), key=lambda row: row.created_at, reverse=True)[:limit]
+
+    async def list_for_principal(
+        self, principal_key: str, *, limit: int = 50
+    ) -> list[ResearchProject]:
+        return sorted(
+            (
+                row
+                for row in self._store.values()
+                if (row.id, principal_key) in self._membership_roles
+            ),
+            key=lambda row: row.created_at,
+            reverse=True,
+        )[:limit]
 
     def flush(self) -> None:
         self._store.update(self._pending)
@@ -89,6 +113,33 @@ class FakeQualityRepository:
         return [row for row in reversed(self.rows) if row.entry_id == entry_id][:limit]
 
 
+class FakeMembershipRepository:
+    def __init__(self, rows: dict[tuple[UUID, str], ProjectRole] | None = None) -> None:
+        self.rows = rows if rows is not None else {}
+
+    async def role_for(self, project_id: UUID, principal_key: str) -> ProjectRole | None:
+        return self.rows.get((project_id, principal_key))
+
+    async def upsert(self, membership: ProjectMembership) -> None:
+        self.rows[(membership.project_id, membership.principal_key)] = membership.role
+
+    async def project_ids_for(self, principal_key: str, *, limit: int = 50) -> list[UUID]:
+        return [project_id for (project_id, key), _ in self.rows.items() if key == principal_key][
+            :limit
+        ]
+
+
+class FakeAccessAuditRepository:
+    def __init__(self, events: list[AccessDecisionEvent] | None = None) -> None:
+        self.events = events if events is not None else []
+
+    async def append(self, event: AccessDecisionEvent) -> None:
+        self.events.append(event)
+
+    async def latest(self, project_id: UUID, *, limit: int = 100) -> list[AccessDecisionEvent]:
+        return [event for event in reversed(self.events) if event.project_id == project_id][:limit]
+
+
 class FakeUnitOfWork:
     def __init__(
         self,
@@ -96,12 +147,18 @@ class FakeUnitOfWork:
         literature: FakeLiteratureRepository | None = None,
         library: FakeLibraryRepository | None = None,
         quality: FakeQualityRepository | None = None,
+        memberships: FakeMembershipRepository | None = None,
+        access_audit: FakeAccessAuditRepository | None = None,
     ) -> None:
-        self._projects = FakeProjectRepository(store)
+        self._memberships = memberships if memberships is not None else FakeMembershipRepository()
+        self._projects = FakeProjectRepository(store, self._memberships.rows)
         self.committed = False
         self._literature = literature if literature is not None else FakeLiteratureRepository()
         self._library = library if library is not None else FakeLibraryRepository()
         self._quality = quality if quality is not None else FakeQualityRepository()
+        self._access_audit = (
+            access_audit if access_audit is not None else FakeAccessAuditRepository()
+        )
 
     @property
     def projects(self) -> ProjectRepository:
@@ -118,6 +175,14 @@ class FakeUnitOfWork:
     @property
     def quality(self) -> QualityReviewRepository:
         return self._quality
+
+    @property
+    def memberships(self) -> MembershipRepository:
+        return self._memberships
+
+    @property
+    def access_audit(self) -> AccessAuditRepository:
+        return self._access_audit
 
     async def __aenter__(self) -> "FakeUnitOfWork":
         return self

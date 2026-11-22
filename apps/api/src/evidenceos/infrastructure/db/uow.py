@@ -4,13 +4,16 @@ from types import TracebackType
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
+from evidenceos.domain.ports.access import AccessAuditRepository, MembershipRepository
 from evidenceos.domain.ports.library import LibraryRepository
 from evidenceos.domain.ports.quality import QualityReviewRepository
 from evidenceos.domain.ports.repositories import ProjectRepository
 from evidenceos.domain.ports.workspace import LiteratureRepository
 from evidenceos.infrastructure.db.repositories import (
+    SqlAlchemyAccessAuditRepository,
     SqlAlchemyLibraryRepository,
     SqlAlchemyLiteratureRepository,
+    SqlAlchemyMembershipRepository,
     SqlAlchemyProjectRepository,
     SqlAlchemyQualityReviewRepository,
 )
@@ -24,6 +27,8 @@ class SqlAlchemyUnitOfWork:
         self._literature: SqlAlchemyLiteratureRepository
         self._library: SqlAlchemyLibraryRepository
         self._quality: SqlAlchemyQualityReviewRepository
+        self._memberships: SqlAlchemyMembershipRepository
+        self._access_audit: SqlAlchemyAccessAuditRepository
 
     @property
     def projects(self) -> ProjectRepository:
@@ -41,12 +46,22 @@ class SqlAlchemyUnitOfWork:
     def quality(self) -> QualityReviewRepository:
         return self._quality
 
+    @property
+    def memberships(self) -> MembershipRepository:
+        return self._memberships
+
+    @property
+    def access_audit(self) -> AccessAuditRepository:
+        return self._access_audit
+
     async def __aenter__(self) -> "SqlAlchemyUnitOfWork":
         self._session = self._session_factory()
         self._projects = SqlAlchemyProjectRepository(self._session)
         self._literature = SqlAlchemyLiteratureRepository(self._session)
         self._library = SqlAlchemyLibraryRepository(self._session)
         self._quality = SqlAlchemyQualityReviewRepository(self._session)
+        self._memberships = SqlAlchemyMembershipRepository(self._session)
+        self._access_audit = SqlAlchemyAccessAuditRepository(self._session)
         return self
 
     async def __aexit__(
