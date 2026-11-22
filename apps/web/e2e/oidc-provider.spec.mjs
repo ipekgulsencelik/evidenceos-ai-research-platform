@@ -23,9 +23,14 @@ function assertStagingConfiguration() {
     if (!value) throw new Error(name + " is required for the gated OIDC staging test.");
   }
   const url = new URL(origin);
-  if (url.protocol !== "https:" || url.origin !== origin || url.pathname !== "/" ||
+  // HTTP is permitted ONLY for the pinned isolated loopback Docker staging
+  // app. The actual Keycloak issuer remains HTTPS with a trusted certificate.
+  const explicitLocal = process.env.EVIDENCEOS_E2E_ALLOW_LOCAL_HTTP === "1" &&
+    origin === "http://127.0.0.1:3101";
+  if ((!explicitLocal && url.protocol !== "https:") ||
+      url.origin !== origin || url.pathname !== "/" ||
       url.search || url.hash || userA === userB) {
-    throw new Error("Use a distinct-account, HTTPS-only, exact-origin disposable staging target.");
+    throw new Error("Use an exact HTTPS staging origin or explicit 127.0.0.1 local test.");
   }
 }
 
