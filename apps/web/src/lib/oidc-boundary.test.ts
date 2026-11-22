@@ -5,6 +5,7 @@ import test from "node:test";
 import { NextRequest } from "next/server";
 
 import { POST as logout } from "../app/auth/logout/route.ts";
+import { LOGOUT_REQUEST_HEADER } from "./logout-request.ts";
 import { proxy } from "../proxy.ts";
 
 function configure() {
@@ -37,14 +38,58 @@ test("anonymous OIDC browser navigation redirects, but APIs return 401", async (
   assert.equal(free.status, 200);
 });
 
-test("forged origin cannot invoke the public POST-only logout endpoint", async () => {
+test("logout rejects forged Origin even with a custom header and fake same-origin metadata", async () => {
   const origin = configure();
-  const forged = await logout(new NextRequest(origin + "/auth/logout", {
+  for (const suppliedOrigin of ["https://attacker.invalid", "null", "http://localhost:3001"]) {
+    const forged = await logout(new NextRequest(origin + "/auth/logout", {
+      method: "POST",
+      headers: {
+        Origin: suppliedOrigin,
+        [LOGOUT_REQUEST_HEADER]: "1",
+        "Sec-Fetch-Site": "same-origin",
+      },
+    }));
+    assert.equal(forged.status, 403);
+    assert.equal(forged.headers.get("set-cookie"), null);
+  }
+});
+
+test("logout rejects cross-origin and headerless form submissions even without a session", async () => {
+  const origin = configure();
+  for (const headers of [
+    { Origin: origin },
+    { "Sec-Fetch-Site": "cross-site", [LOGOUT_REQUEST_HEADER]: "1" },
+    { "Sec-Fetch-Site": "same-site", [LOGOUT_REQUEST_HEADER]: "1" },
+    { [LOGOUT_REQUEST_HEADER]: "1" },
+  ]) {
+    const forbidden = await logout(new NextRequest(origin + "/auth/logout", {
+      method: "POST", headers,
+    }));
+    assert.equal(forbidden.status, 403);
+    assert.equal(forbidden.headers.get("set-cookie"), null);
+  }
+});
+
+test("same-origin browser fetch logs out and clears cookies even without a session", async () => {
+  const origin = configure();
+  const response = await logout(new NextRequest(origin + "/auth/logout", {
     method: "POST",
-    headers: { Origin: "https://attacker.invalid" },
+    headers: { Origin: origin, [LOGOUT_REQUEST_HEADER]: "1" },
   }));
-  assert.equal(forged.status, 403);
-  assert.equal(forged.headers.get("set-cookie"), null);
+  assert.equal(response.status, 303);
+  assert.equal(response.headers.get("location"), origin + "/signin");
+  assert.equal(response.headers.get("cache-control"), "no-store");
+  assert.match(response.headers.get("set-cookie") || "", /eos_session=;/);
+});
+
+test("browsers omitting Origin can logout only with same-origin Fetch Metadata", async () => {
+  const origin = configure();
+  const response = await logout(new NextRequest(origin + "/auth/logout", {
+    method: "POST",
+    headers: { "Sec-Fetch-Site": "same-origin", [LOGOUT_REQUEST_HEADER]: "1" },
+  }));
+  assert.equal(response.status, 303);
+  assert.equal(response.headers.get("location"), origin + "/signin");
 });
 
 test("incomplete OIDC secret configuration rejects protected navigation", async () => {
