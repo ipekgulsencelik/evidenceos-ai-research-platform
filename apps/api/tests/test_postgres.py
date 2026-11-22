@@ -11,16 +11,16 @@ from evidenceos.application.use_cases.library import (
     UpdateCatalogCommand,
     UpdateLibraryMetadata,
 )
+from evidenceos.application.use_cases.projects import (
+    CreateProject,
+    CreateProjectCommand,
+    GetProject,
+)
 from evidenceos.application.use_cases.quality import (
     GetQualityChecklist,
     ListQualityReviewHistory,
     SaveQualityReview,
     SaveQualityReviewCommand,
-)
-from evidenceos.application.use_cases.projects import (
-    CreateProject,
-    CreateProjectCommand,
-    GetProject,
 )
 from evidenceos.application.use_cases.workspace import (
     GetLiteratureAnalysis,

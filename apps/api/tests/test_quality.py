@@ -74,7 +74,9 @@ async def test_coverage_not_conflated_with_reporting_and_latest_review() -> None
     entry = await SaveLiteratureAnalysis(make_uow).execute(project.id, reported_profile())
     checklist = await GetQualityChecklist(make_uow).execute(project.id, entry.id)
     assert len(checklist.indicators) == 7
-    sampling = next(row for row in checklist.indicators if row.dimension is QualityDimension.SAMPLING)
+    sampling = next(
+        row for row in checklist.indicators if row.dimension is QualityDimension.SAMPLING
+    )
     assert sampling.coverage == "excerpt_available"
     assert sampling.source_excerpts[0].locator == "PDF page 2"
     psychometrics = next(
@@ -207,7 +209,7 @@ async def test_sqlite_quality_review_reloads_in_new_unit_of_work() -> None:
         loaded = await GetQualityChecklist(factory).execute(project.id, entry.id)
         assert loaded.latest_reviews[0].id == created.id
         assert loaded.latest_reviews[0].note == "Verify confounding"
-        assert len((await ListQualityReviewHistory(factory).execute(project.id, entry.id))) == 1
+        assert len(await ListQualityReviewHistory(factory).execute(project.id, entry.id)) == 1
     finally:
         await engine.dispose()
 
