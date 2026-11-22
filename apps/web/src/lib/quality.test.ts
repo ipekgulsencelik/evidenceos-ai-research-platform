@@ -3,7 +3,7 @@ import test from "node:test";
 
 import {
   defaultQualityDraft, DIMENSIONS, hasUnverifiedJudgment,
-  isQualityChecklist, isQualityRevision,
+  isQualityChecklist, isQualityRevision, QualitySelectionGuard,
 } from "./quality.ts";
 
 const project = "a2a8c77a-b3ac-4d17-8e94-1234567890ab";
@@ -42,4 +42,26 @@ test("human judgments require explicit original-paper check", () => {
     ...defaultQualityDraft(),
     checked_original: true, concern: "potential_concern",
   }), false);
+});
+
+test("async selection guard discards previous studies and project responses", () => {
+  const gate = new QualitySelectionGuard();
+  const first = gate.capture(project, entry);
+  assert.equal(gate.isCurrent(first, project, entry), true);
+  assert.equal(gate.isCurrent(first, project, "another-entry"), false);
+  assert.equal(gate.isCurrent(first, "another-project", entry), false);
+
+  gate.invalidate(); // A → B
+  assert.equal(gate.isCurrent(first, project, entry), false);
+  const second = gate.capture(project, "another-entry");
+  assert.equal(gate.isCurrent(second, project, "another-entry"), true);
+
+  gate.invalidate(); // B → A: matching IDs must not revive an old response
+  const returned = gate.capture(project, entry);
+  assert.equal(gate.isCurrent(first, project, entry), false);
+  assert.equal(gate.isCurrent(second, project, "another-entry"), false);
+  assert.equal(gate.isCurrent(returned, project, entry), true);
+
+  gate.invalidate(); // Switch project while the same study ID is still selected
+  assert.equal(gate.isCurrent(returned, project, entry), false);
 });

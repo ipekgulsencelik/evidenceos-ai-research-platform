@@ -121,3 +121,35 @@ export function hasUnverifiedJudgment(draft: QualityDraft): boolean {
     draft.reporting !== "not_assessed" || draft.concern !== "not_assessed"
   );
 }
+
+/**
+ * An epoch-based guard for asynchronous review requests. Each study or project
+ * selection invalidates every in-flight response, including A → B → A changes.
+ */
+export interface QualitySelectionToken {
+  readonly generation: number;
+  readonly projectId: string;
+  readonly entryId: string;
+}
+
+export class QualitySelectionGuard {
+  private generation = 0;
+
+  capture(projectId: string, entryId: string): QualitySelectionToken {
+    return { generation: this.generation, projectId, entryId };
+  }
+
+  invalidate(): void {
+    this.generation += 1;
+  }
+
+  isCurrent(
+    token: QualitySelectionToken,
+    projectId: string,
+    entryId: string,
+  ): boolean {
+    return token.generation === this.generation
+      && token.projectId === projectId
+      && token.entryId === entryId;
+  }
+}
