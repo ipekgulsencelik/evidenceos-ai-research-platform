@@ -26,10 +26,6 @@ class Settings(BaseSettings):
     research_timeout_seconds: float = Field(default=8.0, ge=1.0, le=30.0)
 
 
-@lru_cache
-def get_settings() -> Settings:
-    return Settings()
-
     @model_validator(mode="after")
     def validate_security(self) -> Self:
         """Never start in production with an unprotected API."""
@@ -40,3 +36,8 @@ def get_settings() -> Settings:
         ):
             raise ValueError("service_token mode requires a token of at least 32 characters")
         return self
+
+
+@lru_cache
+def get_settings() -> Settings:
+    return Settings()
