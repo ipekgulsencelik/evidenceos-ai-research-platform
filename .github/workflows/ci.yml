@@ -111,6 +111,16 @@ jobs:
           docker compose up -d --wait redis
           docker compose exec -T redis sh -c 'REDISCLI_AUTH="$REDIS_PASSWORD" redis-cli ping | grep -q PONG'
           docker compose exec -T redis sh -c 'redis-cli ping | grep -q NOAUTH'
+      - name: Check isolated OIDC staging contracts and Compose syntax
+        env:
+          STAGING_POSTGRES_PASSWORD: ci-only-staging-placeholder
+          STAGING_REDIS_PASSWORD: ci-only-staging-placeholder-for-redis-123456
+          STAGING_KEYCLOAK_ADMIN_PASSWORD: ci-only-staging-placeholder
+          STAGING_OIDC_WEB_CLIENT_SECRET: ci-only-staging-placeholder-for-web-client
+          STAGING_WEB_SESSION_KEY: ci-only-staging-placeholder-for-session-key-012345
+        run: |
+          python -m unittest discover -s scripts -p 'test_oidc_staging.py' -v
+          docker compose -f compose.oidc-staging.yaml config --quiet
       - name: Build API image
         run: docker build -t evidenceos-api:ci apps/api
       - name: Build Web image
