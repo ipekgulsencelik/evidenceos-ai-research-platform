@@ -18,3 +18,5 @@ node_modules/
 *.tsbuildinfo
 coverage/
 npm-debug.log*
+test-results/
+playwright-report/
