@@ -29,7 +29,8 @@ async def create_project(
 ) -> ProjectResponse:
     project = await CreateProject(uow_factory).execute(
         CreateProjectCommand(title=payload.title, domain=payload.domain),
-        actor=actor, request_id=getattr(request.state, "request_id", ""),
+        actor=actor,
+        request_id=getattr(request.state, "request_id", ""),
     )
     return ProjectResponse.from_entity(project)
 
