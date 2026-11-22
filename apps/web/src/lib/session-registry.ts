@@ -73,6 +73,17 @@ export function sessionReconnectDelay(retries: number): number {
   return Math.min(250 * 2 ** Math.min(Math.max(retries, 0), 5), 8000);
 }
 
+/** Bound the *initial* connection attempt, or an unconfigured/unreachable
+ * Redis would hang login instead of returning 503. After any successful
+ * connection, keep reconnecting indefinitely while each request fails closed.
+ */
+export function sessionReconnectStrategy(retries: number, connectedOnce: boolean): number | Error {
+  if (!connectedOnce && retries >= 3) {
+    return new Error("Initial session store connection is unavailable");
+  }
+  return sessionReconnectDelay(retries);
+}
+
 let registryPromise: Promise<RedisSessionRegistry> | undefined;
 let registryClient: ReturnType<typeof createClient> | undefined;
 
@@ -92,17 +103,20 @@ export async function getSessionRegistry(): Promise<RedisSessionRegistry> {
   }
   if (!registryPromise) {
     registryPromise = (async () => {
+      let connectedOnce = false;
       const client = createClient({
         url,
         password,
         disableOfflineQueue: true,
         socket: {
           connectTimeout: 1500,
-          reconnectStrategy: sessionReconnectDelay,
+          reconnectStrategy: (retries: number) =>
+            sessionReconnectStrategy(retries, connectedOnce),
         },
       });
       // Redis requires an error listener; requests surface operation errors.
       client.on("error", () => {});
+      client.on("ready", () => { connectedOnce = true; });
       await client.connect();
       registryClient = client;
       return new RedisSessionRegistry(client);
