@@ -3,6 +3,7 @@
 from dataclasses import dataclass
 from uuid import UUID
 
+from evidenceos.domain.entities.access import Principal
 from evidenceos.domain.entities.literature import LiteratureFacet, LiteratureProfile
 from evidenceos.domain.entities.project import ResearchDomain, ResearchProject
 from evidenceos.domain.entities.workspace import LiteratureEntry, ReviewRevision
@@ -27,8 +28,12 @@ class ListResearchProjects:
     def __init__(self, uow_factory: UnitOfWorkFactory) -> None:
         self._uow_factory = uow_factory
 
-    async def execute(self, *, limit: int = 50) -> list[ResearchProject]:
+    async def execute(
+        self, *, limit: int = 50, actor: Principal | None = None
+    ) -> list[ResearchProject]:
         async with self._uow_factory() as uow:
+            if actor is not None and not actor.is_operator:
+                return await uow.projects.list_for_principal(actor.key, limit=limit)
             return await uow.projects.list_recent(limit=limit)
 
 
