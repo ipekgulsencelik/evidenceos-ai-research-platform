@@ -85,12 +85,8 @@ class FakeQualityRepository:
             None,
         )
 
-    async def history(
-        self, entry_id: UUID, *, limit: int = 100
-    ) -> list[QualityReviewRevision]:
-        return [
-            row for row in reversed(self.rows) if row.entry_id == entry_id
-        ][:limit]
+    async def history(self, entry_id: UUID, *, limit: int = 100) -> list[QualityReviewRevision]:
+        return [row for row in reversed(self.rows) if row.entry_id == entry_id][:limit]
 
 
 class FakeUnitOfWork:

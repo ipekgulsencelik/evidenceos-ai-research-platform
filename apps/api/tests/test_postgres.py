@@ -158,16 +158,24 @@ async def test_postgres_quality_revision_migration_and_latest_judgments() -> Non
         entry = await SaveLiteratureAnalysis(make_uow).execute(project.id, example_profile())
         first = await SaveQualityReview(make_uow).execute(
             SaveQualityReviewCommand(
-                project.id, entry.id, QualityDimension.DESIGN,
-                ReportingJudgment.NOT_ASSESSED, ConcernJudgment.NOT_ASSESSED,
-                False, "Before full-text review",
+                project.id,
+                entry.id,
+                QualityDimension.DESIGN,
+                ReportingJudgment.NOT_ASSESSED,
+                ConcernJudgment.NOT_ASSESSED,
+                False,
+                "Before full-text review",
             )
         )
         second = await SaveQualityReview(make_uow).execute(
             SaveQualityReviewCommand(
-                project.id, entry.id, QualityDimension.DESIGN,
+                project.id,
+                entry.id,
+                QualityDimension.DESIGN,
                 ReportingJudgment.UNCLEAR_AFTER_REVIEW,
-                ConcernJudgment.POTENTIAL_CONCERN, True, "Need verification",
+                ConcernJudgment.POTENTIAL_CONCERN,
+                True,
+                "Need verification",
             )
         )
         checklist = await GetQualityChecklist(make_uow).execute(project.id, entry.id)

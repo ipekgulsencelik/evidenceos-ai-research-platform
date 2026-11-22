@@ -88,16 +88,24 @@ async def test_coverage_not_conflated_with_reporting_and_latest_review() -> None
 
     first = await SaveQualityReview(make_uow).execute(
         SaveQualityReviewCommand(
-            project.id, entry.id, QualityDimension.SAMPLING,
-            ReportingJudgment.NOT_ASSESSED, ConcernJudgment.NOT_ASSESSED,
-            False, "Need full-text confirmation",
+            project.id,
+            entry.id,
+            QualityDimension.SAMPLING,
+            ReportingJudgment.NOT_ASSESSED,
+            ConcernJudgment.NOT_ASSESSED,
+            False,
+            "Need full-text confirmation",
         )
     )
     second = await SaveQualityReview(make_uow).execute(
         SaveQualityReviewCommand(
-            project.id, entry.id, QualityDimension.SAMPLING,
-            ReportingJudgment.UNCLEAR_AFTER_REVIEW, ConcernJudgment.POTENTIAL_CONCERN,
-            True, "Sampling process not clear on full-text review",
+            project.id,
+            entry.id,
+            QualityDimension.SAMPLING,
+            ReportingJudgment.UNCLEAR_AFTER_REVIEW,
+            ConcernJudgment.POTENTIAL_CONCERN,
+            True,
+            "Sampling process not clear on full-text review",
         )
     )
     assert first.id != second.id
@@ -123,7 +131,9 @@ async def test_manual_judgments_require_original_pdf_check() -> None:
     with pytest.raises(InvalidResearchWorkspace, match="original PDF"):
         await SaveQualityReview(factory).execute(
             SaveQualityReviewCommand(
-                project.id, entry.id, QualityDimension.DESIGN,
+                project.id,
+                entry.id,
+                QualityDimension.DESIGN,
                 ReportingJudgment.NOT_REPORTED_IN_FULL_TEXT,
                 ConcernJudgment.NOT_ASSESSED,
                 False,
@@ -133,19 +143,25 @@ async def test_manual_judgments_require_original_pdf_check() -> None:
     with pytest.raises(InvalidResearchWorkspace, match="original PDF"):
         await SaveQualityReview(factory).execute(
             SaveQualityReviewCommand(
-                project.id, entry.id, QualityDimension.PRECISION,
+                project.id,
+                entry.id,
+                QualityDimension.PRECISION,
                 ReportingJudgment.NOT_ASSESSED,
                 ConcernJudgment.NO_CONCERN_IDENTIFIED,
-                False, "",
+                False,
+                "",
             )
         )
     with pytest.raises(InvalidResearchWorkspace, match="1000"):
         await SaveQualityReview(factory).execute(
             SaveQualityReviewCommand(
-                project.id, entry.id, QualityDimension.DESIGN,
+                project.id,
+                entry.id,
+                QualityDimension.DESIGN,
                 ReportingJudgment.NOT_ASSESSED,
                 ConcernJudgment.NOT_ASSESSED,
-                False, "x" * 1001,
+                False,
+                "x" * 1001,
             )
         )
 
@@ -171,8 +187,13 @@ async def test_project_isolation_and_invalid_entries() -> None:
     with pytest.raises(LiteratureEntryNotFound):
         await SaveQualityReview(factory).execute(
             SaveQualityReviewCommand(
-                second.id, entry.id, QualityDimension.DESIGN,
-                ReportingJudgment.NOT_ASSESSED, ConcernJudgment.NOT_ASSESSED, False, "",
+                second.id,
+                entry.id,
+                QualityDimension.DESIGN,
+                ReportingJudgment.NOT_ASSESSED,
+                ConcernJudgment.NOT_ASSESSED,
+                False,
+                "",
             )
         )
     with pytest.raises(LiteratureEntryNotFound):
@@ -201,9 +222,13 @@ async def test_sqlite_quality_review_reloads_in_new_unit_of_work() -> None:
         entry = await SaveLiteratureAnalysis(factory).execute(project.id, reported_profile())
         created = await SaveQualityReview(factory).execute(
             SaveQualityReviewCommand(
-                project.id, entry.id, QualityDimension.DESIGN,
+                project.id,
+                entry.id,
+                QualityDimension.DESIGN,
                 ReportingJudgment.REPORTED_IN_FULL_TEXT,
-                ConcernJudgment.POTENTIAL_CONCERN, True, "Verify confounding",
+                ConcernJudgment.POTENTIAL_CONCERN,
+                True,
+                "Verify confounding",
             )
         )
         loaded = await GetQualityChecklist(factory).execute(project.id, entry.id)
@@ -222,8 +247,8 @@ def client() -> Iterator[TestClient]:
     projects: dict[UUID, ResearchProject] = {}
     records = FakeLiteratureRepository()
     quality = FakeQualityRepository()
-    app.dependency_overrides[get_uow_factory] = lambda: lambda: FakeUnitOfWork(
-        projects, records, quality=quality
+    app.dependency_overrides[get_uow_factory] = lambda: (
+        lambda: FakeUnitOfWork(projects, records, quality=quality)
     )
     with TestClient(app) as test_client:
         yield test_client
@@ -279,7 +304,10 @@ def test_quality_api_reloads_history_and_rejects_cross_project(client: TestClien
     wrong = f"/api/v1/projects/{second}/literature/{entry_id}"
     assert client.get(wrong + "/quality-checklist").status_code == 404
     assert client.get(wrong + "/quality-reviews").status_code == 404
-    assert client.post(
-        wrong + "/quality-reviews",
-        json={"dimension": "sampling", "checked_original": False},
-    ).status_code == 404
+    assert (
+        client.post(
+            wrong + "/quality-reviews",
+            json={"dimension": "sampling", "checked_original": False},
+        ).status_code
+        == 404
+    )

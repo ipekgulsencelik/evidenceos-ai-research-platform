@@ -249,9 +249,7 @@ class SqlAlchemyQualityReviewRepository:
         row = result.first()
         return self._to_entity(row) if row is not None else None
 
-    async def history(
-        self, entry_id: UUID, *, limit: int = 100
-    ) -> list[QualityReviewRevision]:
+    async def history(self, entry_id: UUID, *, limit: int = 100) -> list[QualityReviewRevision]:
         result = await self._session.scalars(
             select(QualityReviewRow)
             .where(QualityReviewRow.entry_id == entry_id)
