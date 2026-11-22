@@ -30,6 +30,7 @@ from evidenceos.infrastructure.providers.groq_evidence import (
     EvidenceProviderUnavailable,
 )
 from evidenceos.infrastructure.providers.pypdf_document import InvalidPdfDocument, PdfTooLarge
+from evidenceos.presentation.api.access import require_project_access
 from evidenceos.presentation.api.routes.academic import router as academic_router
 from evidenceos.presentation.api.routes.document import router as document_router
 from evidenceos.presentation.api.routes.evidence import router as evidence_router
@@ -148,7 +149,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     # Every research route is protected at composition, before handlers run.
     # Health probes are deliberately public for container orchestration.
-    protected = [Depends(validate_service_credential)]
+    protected = [Depends(validate_service_credential), Depends(require_project_access)]
     for router in (
         literature_router,
         document_router,
