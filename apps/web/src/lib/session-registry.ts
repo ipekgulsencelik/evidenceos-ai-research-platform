@@ -48,28 +48,30 @@ export class RedisSessionRegistry {
   }
 }
 
+/** Reject insecure/missing Redis configuration before starting OIDC login. */
+export function sessionRegistryConfigured(): boolean {
+  const url = process.env.EVIDENCEOS_SESSION_REDIS_URL || "";
+  const password = process.env.EVIDENCEOS_SESSION_REDIS_PASSWORD || "";
+  if (password.length < 32 || password.length > 512) return false;
+  try {
+    const parsed = new URL(url);
+    return ["redis:", "rediss:"].includes(parsed.protocol) &&
+      Boolean(parsed.hostname) && !parsed.username && !parsed.password &&
+      !parsed.search && !parsed.hash && parsed.pathname === "/" &&
+      url.length <= 2048 &&
+      !(process.env.EVIDENCEOS_APP_ENV === "production" && parsed.protocol !== "rediss:");
+  } catch {
+    return false;
+  }
+}
+
 let registryPromise: Promise<RedisSessionRegistry> | undefined;
 
 /** Reuse the connection across requests; missing/failed storage fails closed. */
 export async function getSessionRegistry(): Promise<RedisSessionRegistry> {
   const url = process.env.EVIDENCEOS_SESSION_REDIS_URL || "";
   const password = process.env.EVIDENCEOS_SESSION_REDIS_PASSWORD || "";
-  if (process.env.EVIDENCEOS_SECURITY_MODE !== "oidc" ||
-      password.length < 32 || password.length > 512) {
-    throw new Error("Central OIDC session registry is not configured");
-  }
-  try {
-    const parsed = new URL(url);
-    if (!["redis:", "rediss:"].includes(parsed.protocol) || !parsed.hostname ||
-        parsed.username || parsed.password || parsed.search || parsed.hash ||
-        parsed.pathname !== "/" || url.length > 2048) {
-      throw new Error("Invalid session store endpoint");
-    }
-    // Redis is accessible only over the private Compose network in local mode.
-    if (process.env.EVIDENCEOS_APP_ENV === "production" && parsed.protocol !== "rediss:") {
-      throw new Error("Production session store must use TLS");
-    }
-  } catch {
+  if (process.env.EVIDENCEOS_SECURITY_MODE !== "oidc" || !sessionRegistryConfigured()) {
     throw new Error("Central OIDC session registry is not configured");
   }
 
