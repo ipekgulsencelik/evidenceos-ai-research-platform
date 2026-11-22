@@ -218,7 +218,7 @@ export function ProjectMembershipManager() {
               {membersLoaded && members.length === 0 && (
                 <p role="status">No project memberships are registered.
                   {identity && !isOidcIdentity(identity)
-                    ? " This is expected for projects created in local operator mode."
+                    ? " This is expected for projects created in local or service-operator mode."
                     : " Check that this project has an assigned OIDC owner."}
                 </p>
               )}
