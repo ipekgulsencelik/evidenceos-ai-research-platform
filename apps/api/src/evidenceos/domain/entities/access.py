@@ -51,7 +51,9 @@ def stable_subject_key(issuer: str, subject: str) -> str:
 
 
 LOCAL_OPERATOR = Principal(stable_subject_key("evidenceos:local", "operator"), "local_operator")
-SERVICE_OPERATOR = Principal(stable_subject_key("evidenceos:service", "operator"), "service_operator")
+SERVICE_OPERATOR = Principal(
+    stable_subject_key("evidenceos:service", "operator"), "service_operator"
+)
 
 
 @dataclass(frozen=True, slots=True)
