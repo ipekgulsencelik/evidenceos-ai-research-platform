@@ -2,8 +2,8 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
-  createSessionId, RedisSessionRegistry, sessionReconnectDelay, sessionRegistryConfigured,
-  sessionRegistryKey,
+  createSessionId, RedisSessionRegistry, sessionReconnectDelay, sessionReconnectStrategy,
+  sessionRegistryConfigured, sessionRegistryKey,
 } from "./session-registry.ts";
 
 type Store = ConstructorParameters<typeof RedisSessionRegistry>[0];
@@ -95,4 +95,13 @@ test("reconnect delay never abandons recovery, even after long Redis outages", (
   assert.equal(sessionReconnectDelay(5), 8000);
   assert.equal(sessionReconnectDelay(1000), 8000);
   assert.equal(typeof sessionReconnectDelay(1000), "number");
+});
+
+test("initial Redis connection fails promptly, but established sessions keep retrying", () => {
+  assert.equal(sessionReconnectStrategy(0, false), 250);
+  assert.equal(sessionReconnectStrategy(2, false), 1000);
+  assert.ok(sessionReconnectStrategy(3, false) instanceof Error);
+  assert.ok(sessionReconnectStrategy(100, false) instanceof Error);
+  assert.equal(sessionReconnectStrategy(3, true), 2000);
+  assert.equal(sessionReconnectStrategy(100, true), 8000);
 });
