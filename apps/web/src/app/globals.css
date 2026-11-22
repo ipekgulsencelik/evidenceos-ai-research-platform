@@ -263,3 +263,26 @@ a { text-underline-offset:3px; }
   .research-library-meta {grid-template-columns:1fr;}
   .research-library-item-heading {flex-direction:column;}
 }
+
+/* Source-grounded, consent-gated semantic comparison */
+.semantic-comparison-panel {
+  border-top: 1px solid #d7e8e5; margin-top: 23px; padding-top: 23px;
+}
+.semantic-comparison-panel > .primary-btn { margin-top: 14px; }
+.semantic-consent {
+  display: flex; align-items: flex-start; gap: 9px; color: #466571;
+  font-size: 12px; line-height: 1.6; padding: 12px 0;
+}
+.semantic-consent input { width: 17px; height: 17px; accent-color: #127d76; flex-shrink: 0; }
+.semantic-comparison-results { margin-top: 20px; }
+.semantic-comparison-item {
+  margin-top: 12px; padding: 16px; border: 1px solid #d8e7e4;
+  border-radius: 10px; background: #f9fcfb; overflow-wrap: anywhere;
+}
+.semantic-comparison-item h5 { font-size: 14px; font-weight: 800; margin: 0 0 8px; }
+.semantic-comparison-item p { margin: 8px 0; font-size: 12px; line-height: 1.7; }
+.semantic-kind { color: #167b74; font-weight: 700; }
+.semantic-quote-grid { display: grid; gap: 9px; margin-top: 13px; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+.semantic-quote-grid details { background: #fff; border: 1px solid #e0ebe8; border-radius: 8px; padding: 10px; }
+.semantic-quote-grid summary { cursor: pointer; font-size: 12px; font-weight: 700; color: #196f68; }
+.semantic-quote-grid blockquote { margin: 9px 0 0; padding: 8px 10px; border-left: 3px solid #0f837b; white-space: pre-wrap; font-size: 12px; }

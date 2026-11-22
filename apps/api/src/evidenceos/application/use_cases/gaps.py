@@ -2,13 +2,13 @@
 
 from uuid import UUID
 
+from evidenceos.application.use_cases.selection import load_distinct_studies
 from evidenceos.domain.entities.gaps import (
     CoverageCandidate,
     GapComparison,
     GroundedReference,
 )
 from evidenceos.domain.entities.literature import FACET_ORDER, FindingStatus
-from evidenceos.domain.errors import InvalidResearchWorkspace, LiteratureEntryNotFound
 from evidenceos.domain.ports.repositories import UnitOfWorkFactory
 
 
@@ -17,20 +17,7 @@ class CompareEvidenceCoverage:
         self._uow_factory = uow_factory
 
     async def execute(self, project_id: UUID, entry_ids: tuple[UUID, ...]) -> GapComparison:
-        if not 2 <= len(entry_ids) <= 10 or len(set(entry_ids)) != len(entry_ids):
-            raise InvalidResearchWorkspace("Select 2–10 distinct saved analyses")
-        from evidenceos.application.use_cases.workspace import _require_project
-
-        await _require_project(self._uow_factory, project_id)
-        async with self._uow_factory() as uow:
-            entries = [await uow.literature.get(entry_id) for entry_id in entry_ids]
-        if any(entry is None or entry.project_id != project_id for entry in entries):
-            raise LiteratureEntryNotFound("A selected analysis is not in this project")
-        validated = [entry for entry in entries if entry is not None]
-        if len({entry.profile.sha256 for entry in validated}) != len(validated):
-            raise InvalidResearchWorkspace(
-                "Select analyses of different PDFs, not repeated snapshots of one PDF"
-            )
+        validated = await load_distinct_studies(self._uow_factory, project_id, entry_ids)
         candidates: list[CoverageCandidate] = []
         for facet in FACET_ORDER:
             references: list[GroundedReference] = []

@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { BookOpen, CircleAlert, FileSearch, LoaderCircle, Save } from "lucide-react";
+import { SemanticGapIntelligence } from "@/components/semantic-gap-intelligence";
 
 import { FACETS } from "@/lib/literature";
 import {
@@ -315,6 +316,13 @@ export function ResearchLibrary({ projectId, refreshToken }: Props) {
           </div>
         )}
       </div>
+      <SemanticGapIntelligence
+        projectId={projectId}
+        selectedIds={selected}
+        selectedHashes={selected.map(
+          (id) => items.find((item) => item.entry.id === id)?.entry.profile.sha256 || ""
+        )}
+      />
     </section>
   );
 }
