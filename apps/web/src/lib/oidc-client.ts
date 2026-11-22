@@ -3,6 +3,7 @@
  */
 import * as oidc from "openid-client";
 import { sessionKeyConfigured } from "./oidc-session";
+import { sessionRegistryConfigured } from "./session-registry";
 
 export interface BrowserOidcSettings {
   issuer: string;
@@ -22,7 +23,7 @@ export function browserOidcSettings(): BrowserOidcSettings | null {
   const origin = process.env.EVIDENCEOS_WEB_ORIGIN || "";
   const apiAudience = process.env.EVIDENCEOS_OIDC_AUDIENCE || "";
 
-  if (!sessionKeyConfigured() || !issuer || clientId.length < 1 ||
+  if (!sessionKeyConfigured() || !sessionRegistryConfigured() || !issuer || clientId.length < 1 ||
       clientId.length > 256 || clientSecret.length < 20 ||
       clientSecret.length > 2048 || !apiAudience || apiAudience.length > 256 ||
       apiAudience === clientId) return null;
