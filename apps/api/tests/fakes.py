@@ -157,7 +157,9 @@ class FakeUnitOfWork:
         self._literature = literature if literature is not None else FakeLiteratureRepository()
         self._library = library if library is not None else FakeLibraryRepository()
         self._quality = quality if quality is not None else FakeQualityRepository()
-        self._access_audit = access_audit if access_audit is not None else FakeAccessAuditRepository()
+        self._access_audit = (
+            access_audit if access_audit is not None else FakeAccessAuditRepository()
+        )
 
     @property
     def projects(self) -> ProjectRepository:
