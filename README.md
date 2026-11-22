@@ -169,3 +169,18 @@ mode until a maintained OAuth2/OIDC browser login and session workflow is
 implemented. Continue using the existing localhost modes for the current UI.
 Never expose the prototype as a public multi-user production service.
 See [OIDC resource-server guide](docs/oidc-resource-server.md).
+
+## OIDC browser login (Next.js BFF)
+
+In `EVIDENCEOS_SECURITY_MODE=oidc`, the Next.js UI now implements a confidential
+OAuth2 Authorization Code + PKCE sign-in flow with a maintained OIDC client,
+a five-minute login transaction, and a short-lived, encrypted HttpOnly session.
+The BFF never exposes access tokens to browser JavaScript and forwards user
+bearer tokens only to the independently verifying FastAPI service. A POST-only
+same-origin sign-out action clears local session cookies.
+
+Configure a trusted identity provider, API audience, web client and exact
+redirect origin before enabling this mode. See the
+[OIDC browser setup and security limitations](docs/oidc-browser-pkce.md).
+This is **not yet a fully certified public multi-user deployment**; it lacks
+server-side session revocation and comprehensive operational hardening.
