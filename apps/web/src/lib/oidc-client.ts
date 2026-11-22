@@ -24,7 +24,8 @@ export function browserOidcSettings(): BrowserOidcSettings | null {
 
   if (!sessionKeyConfigured() || !issuer || clientId.length < 1 ||
       clientId.length > 256 || clientSecret.length < 20 ||
-      clientSecret.length > 2048 || !apiAudience || apiAudience.length > 256) return null;
+      clientSecret.length > 2048 || !apiAudience || apiAudience.length > 256 ||
+      apiAudience === clientId) return null;
   try {
     const server = new URL(issuer);
     const browser = new URL(origin);
