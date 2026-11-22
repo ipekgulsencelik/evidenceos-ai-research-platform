@@ -11,8 +11,10 @@ export const runtime = "nodejs";
 export async function POST(request: NextRequest): Promise<NextResponse> {
   const settings = browserOidcSettings();
   if (!settings) return new NextResponse("OIDC login is not configured.", { status: 503 });
-  if (request.headers.get("origin") !== settings.origin) {
-    return new NextResponse("Forbidden", { status: 403 });
+  if (!isAuthorizedLogoutRequest(request.headers, settings.origin)) {
+    return new NextResponse("Forbidden", {
+      status: 403, headers: { "Cache-Control": "no-store" },
+    });
   }
   const session = readSession(request.cookies.get(SESSION_COOKIE)?.value);
   if (session) {
