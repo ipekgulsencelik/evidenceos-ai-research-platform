@@ -124,9 +124,7 @@ class SqlAlchemyMembershipRepository:
         else:
             row.role = membership.role.value
 
-    async def project_ids_for(
-        self, principal_key: str, *, limit: int = 50
-    ) -> list[UUID]:
+    async def project_ids_for(self, principal_key: str, *, limit: int = 50) -> list[UUID]:
         result = await self._session.scalars(
             select(ProjectMembershipRow.project_id)
             .where(ProjectMembershipRow.principal_key == principal_key)
@@ -153,9 +151,7 @@ class SqlAlchemyAccessAuditRepository:
             )
         )
 
-    async def latest(
-        self, project_id: UUID, *, limit: int = 100
-    ) -> list[AccessDecisionEvent]:
+    async def latest(self, project_id: UUID, *, limit: int = 100) -> list[AccessDecisionEvent]:
         result = await self._session.scalars(
             select(AccessDecisionRow)
             .where(AccessDecisionRow.project_id == project_id)
@@ -164,8 +160,13 @@ class SqlAlchemyAccessAuditRepository:
         )
         return [
             AccessDecisionEvent(
-                row.id, row.actor_key, row.project_id, row.action,
-                row.outcome, row.request_id, row.created_at,
+                row.id,
+                row.actor_key,
+                row.project_id,
+                row.action,
+                row.outcome,
+                row.request_id,
+                row.created_at,
             )
             for row in result.all()
         ]
