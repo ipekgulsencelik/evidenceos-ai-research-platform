@@ -15,11 +15,18 @@ from evidenceos.domain.entities.literature import (
     LiteratureRejectionReason,
 )
 from evidenceos.domain.entities.project import ResearchDomain, ResearchProject
+from evidenceos.domain.entities.quality import (
+    ConcernJudgment,
+    QualityDimension,
+    QualityReviewRevision,
+    ReportingJudgment,
+)
 from evidenceos.domain.entities.workspace import LiteratureEntry, ReviewRevision
 from evidenceos.infrastructure.db.models import (
     LibraryMetadataRow,
     LiteratureEntryRow,
     ProjectRow,
+    QualityReviewRow,
     ReviewRevisionRow,
 )
 
@@ -194,3 +201,61 @@ class SqlAlchemyLibraryRepository:
             row.status = metadata.status.value
             row.tags = list(metadata.tags)
             row.updated_at = metadata.updated_at
+
+
+class SqlAlchemyQualityReviewRepository:
+    def __init__(self, session: AsyncSession) -> None:
+        self._session = session
+
+    @staticmethod
+    def _to_entity(row: QualityReviewRow) -> QualityReviewRevision:
+        return QualityReviewRevision(
+            row.id,
+            row.entry_id,
+            QualityDimension(row.dimension),
+            ReportingJudgment(row.reporting),
+            ConcernJudgment(row.concern),
+            row.checked_original,
+            row.note,
+            row.created_at,
+        )
+
+    async def add(self, revision: QualityReviewRevision) -> None:
+        self._session.add(
+            QualityReviewRow(
+                id=revision.id,
+                entry_id=revision.entry_id,
+                dimension=revision.dimension.value,
+                reporting=revision.reporting.value,
+                concern=revision.concern.value,
+                checked_original=revision.checked_original,
+                note=revision.note,
+                created_at=revision.created_at,
+            )
+        )
+
+    async def latest(
+        self, entry_id: UUID, dimension: QualityDimension
+    ) -> QualityReviewRevision | None:
+        result = await self._session.scalars(
+            select(QualityReviewRow)
+            .where(
+                QualityReviewRow.entry_id == entry_id,
+                QualityReviewRow.dimension == dimension.value,
+            )
+            .order_by(QualityReviewRow.created_at.desc(), QualityReviewRow.id.desc())
+            .limit(1)
+        )
+        row = result.first()
+        return self._to_entity(row) if row is not None else None
+
+    async def history(
+        self, entry_id: UUID, *, limit: int = 100
+    ) -> list[QualityReviewRevision]:
+        result = await self._session.scalars(
+            select(QualityReviewRow)
+            .where(QualityReviewRow.entry_id == entry_id)
+            .order_by(QualityReviewRow.created_at.desc(), QualityReviewRow.id.desc())
+            .limit(limit)
+        )
+        return [self._to_entity(row) for row in result.all()]
