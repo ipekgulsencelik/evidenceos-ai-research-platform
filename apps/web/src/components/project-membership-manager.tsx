@@ -39,6 +39,7 @@ export function ProjectMembershipManager() {
   const [identity, setIdentity] = useState<VerifiedIdentity | null>(null);
   const [selected, setSelected] = useState<ResearchProject | null>(null);
   const [members, setMembers] = useState<ProjectMember[]>([]);
+  const [membersLoaded, setMembersLoaded] = useState(false);
   const [memberKey, setMemberKey] = useState("");
   const [role, setRole] = useState<AssignableRole>("viewer");
   const [busy, setBusy] = useState(false);
@@ -76,6 +77,7 @@ export function ProjectMembershipManager() {
   async function readMembers(project: ResearchProject): Promise<void> {
     setSelected(project);
     setMembers([]);
+    setMembersLoaded(false);
     setNotice(null);
     setAccessDenied(false);
     setBusy(true);
@@ -92,6 +94,7 @@ export function ProjectMembershipManager() {
         throw new Error("Unexpected project membership data.");
       }
       setMembers(entries);
+      setMembersLoaded(true);
     } catch (cause) {
       setNotice(cause instanceof Error ? cause.message : "Cannot load project members.");
     } finally {
@@ -162,16 +165,16 @@ export function ProjectMembershipManager() {
             <p>Share this key privately with a project owner so they can grant access.
               It is derived from your verified OIDC identity, not your email address.</p>
             <div style={{ overflowWrap: "anywhere", fontFamily: "monospace", fontSize: 13 }}>
-            <code>{identity.principal_key}</code>
-            <div style={{ marginTop: 12 }}>
-              <button style={action} type="button" onClick={() => {
-                void navigator.clipboard.writeText(identity.principal_key).then(
-                  () => setNotice("Identity key copied."),
-                  () => setNotice("Copy this key manually."),
-                );
-              }}>Copy identity key</button>
+              <code>{identity.principal_key}</code>
+              <div style={{ marginTop: 12 }}>
+                <button style={action} type="button" onClick={() => {
+                  void navigator.clipboard.writeText(identity.principal_key).then(
+                    () => setNotice("Identity key copied."),
+                    () => setNotice("Copy this key manually."),
+                  );
+                }}>Copy identity key</button>
+              </div>
             </div>
-          </div>
           </>
         ) : identity ? (
           <p role="status">Local or service-operator mode is active ({identity.kind}).
@@ -208,9 +211,11 @@ export function ProjectMembershipManager() {
             according to your existing role.
           </p> : (
             <>
-              <p>Verify the recipient's identity key through a trusted channel
-                before granting them access. Ownership transfer is intentionally unavailable.</p>
-              {!busy && members.length === 0 && (
+              {isOidcIdentity(identity) && (
+                <p>Verify the recipient's identity key through a trusted channel
+                  before granting them access. Ownership transfer is intentionally unavailable.</p>
+              )}
+              {membersLoaded && members.length === 0 && (
                 <p role="status">No project memberships are registered.
                   {identity && !isOidcIdentity(identity)
                     ? " This is expected for projects created in local operator mode."
@@ -232,7 +237,7 @@ export function ProjectMembershipManager() {
                 ))}
               </ul>
               {isOidcIdentity(identity) ? (
-              <form onSubmit={(event) => { void saveMember(event); }}
+                <form onSubmit={(event) => { void saveMember(event); }}
                 style={{ display: "grid", gap: 12, maxWidth: 650, marginTop: 20 }}>
                 <label>Verified member key
                   <input style={field} value={memberKey} maxLength={64}
@@ -254,7 +259,7 @@ export function ProjectMembershipManager() {
                   disabled={busy || !isMemberKey(memberKey) || memberKey === identity?.principal_key}>
                   Save membership
                 </button>
-              </form>
+                </form>
               ) : (
                 <p role="status">Member invitations and role changes are unavailable in
                   this local operator view. Configure an OIDC identity provider and
