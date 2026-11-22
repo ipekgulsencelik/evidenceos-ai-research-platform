@@ -27,6 +27,10 @@ function endpoint(path: string): URL {
 }
 
 export async function callBackend(path: string, init?: RequestInit): Promise<GatewayResult> {
+  // A browser session must be implemented before forwarding OIDC user tokens.
+  if (process.env.EVIDENCEOS_SECURITY_MODE === "oidc") {
+    return { status: 503, body: { detail: "OIDC browser sessions are not configured." } };
+  }
   const protectedMode = securityEnabled(
     process.env.EVIDENCEOS_APP_ENV, process.env.EVIDENCEOS_SECURITY_MODE,
   );
