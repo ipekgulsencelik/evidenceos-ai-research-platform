@@ -18,6 +18,9 @@ function configureOidc(): string {
   process.env.EVIDENCEOS_OIDC_WEB_CLIENT_SECRET = "very-strong-provider-client-secret";
   process.env.EVIDENCEOS_WEB_ORIGIN = origin;
   process.env.EVIDENCEOS_WEB_SESSION_KEY = randomBytes(32).toString("base64url");
+  // Intentionally unreachable Redis instance; test that sign-in fails closed.
+  process.env.EVIDENCEOS_SESSION_REDIS_URL = "redis://127.0.0.1:1";
+  process.env.EVIDENCEOS_SESSION_REDIS_PASSWORD = "test-only-session-registry-password-012345678901";
   return origin;
 }
 
