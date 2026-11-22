@@ -7,12 +7,13 @@ import type { ResearchProject, ReviewRevision, SavedLiteratureEntry } from "./wo
 import type { GapComparison, LibraryItem, LibraryMetadata } from "./research-library";
 import type { SemanticGapReport } from "./semantic";
 import type { MethodologyReport } from "./methodology";
+import type { QualityChecklist, QualityRevision } from "./quality";
 
 type BackendPayload =
   | AcademicWork[] | CitationCheck | EvidenceReport | PdfReview | LiteratureProfile
   | ResearchProject | ResearchProject[] | ReviewRevision | ReviewRevision[]
   | SavedLiteratureEntry | SavedLiteratureEntry[]
-  | LibraryItem[] | LibraryMetadata | GapComparison | SemanticGapReport | MethodologyReport;
+  | LibraryItem[] | LibraryMetadata | GapComparison | SemanticGapReport | MethodologyReport | QualityChecklist | QualityRevision | QualityRevision[];
 
 export interface GatewayResult {
   status: number;
