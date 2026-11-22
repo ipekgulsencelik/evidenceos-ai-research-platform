@@ -20,3 +20,7 @@ coverage/
 npm-debug.log*
 test-results/
 playwright-report/
+
+# Disposable OIDC staging contains test user passwords, client secrets and TLS keys.
+staging/runtime/
+.env.oidc-staging
