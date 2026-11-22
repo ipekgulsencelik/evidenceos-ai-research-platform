@@ -128,7 +128,8 @@ class FakeMembershipRepository:
     ) -> list[ProjectMembership]:
         return [
             ProjectMembership.create(project_id, key, role)
-            for (pid, key), role in self.rows.items() if pid == project_id
+            for (pid, key), role in self.rows.items()
+            if pid == project_id
         ][:limit]
 
     async def delete(self, project_id: UUID, principal_key: str) -> bool:
