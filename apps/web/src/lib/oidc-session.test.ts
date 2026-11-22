@@ -29,6 +29,7 @@ test("OIDC configuration requires strong secrets, issuer HTTPS, and pinned origi
   process.env.EVIDENCEOS_APP_ENV = "production";
   assert.equal(browserOidcSettings(), null);
   process.env.EVIDENCEOS_WEB_ORIGIN = "https://research.example";
+  process.env.EVIDENCEOS_SESSION_REDIS_URL = "rediss://redis.example:6379";
   assert.equal(browserOidcSettings()?.secureCookies, true);
 
   process.env.EVIDENCEOS_OIDC_ISSUER = "http://idp.example";
