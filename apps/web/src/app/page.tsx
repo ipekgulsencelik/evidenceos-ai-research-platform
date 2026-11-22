@@ -1,5 +1,8 @@
 import { ResearchWorkspace } from "@/components/research-workspace";
 
+// Evaluate OIDC mode at request time: Docker sets it when the container starts.
+export const dynamic = "force-dynamic";
+
 export default function HomePage() {
   return (
     <>
