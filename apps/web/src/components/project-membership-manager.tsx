@@ -4,7 +4,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
 
 import {
-  isAssignableRole, isMemberKey, isProjectMember,
+  isAssignableRole, isMemberKey, isOidcIdentity, isProjectMember,
   type AssignableRole, type ProjectMember, type VerifiedIdentity,
 } from "@/lib/memberships";
 import { isResearchProject, type ResearchProject } from "@/lib/workspace";
@@ -101,8 +101,8 @@ export function ProjectMembershipManager() {
 
   async function saveMember(event: FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault();
-    if (!selected || !isMemberKey(memberKey) || !isAssignableRole(role) ||
-        memberKey === identity?.principal_key) {
+    if (!selected || !isOidcIdentity(identity) || !isMemberKey(memberKey) ||
+        !isAssignableRole(role) || memberKey === identity.principal_key) {
       setNotice("Provide a verified 64-character member key and a non-owner role.");
       return;
     }
@@ -126,7 +126,7 @@ export function ProjectMembershipManager() {
   }
 
   async function revokeMember(principalKey: string): Promise<void> {
-    if (!selected || !isMemberKey(principalKey)) return;
+    if (!selected || !isOidcIdentity(identity) || !isMemberKey(principalKey)) return;
     if (!window.confirm("Remove this member's access to the project?")) return;
     setBusy(true);
     setNotice(null);
@@ -150,14 +150,18 @@ export function ProjectMembershipManager() {
       padding: "40px 24px", margin: "0 auto", color: "#16374b", lineHeight: 1.55 }}>
       <Link href="/" style={{ color: "#17666a" }}>Back to research workspace</Link>
       <h1 style={{ marginBottom: 6 }}>Project access management</h1>
-      <p>Only project owners can view or change memberships. Access is enforced by the API.</p>
+      <p>Project membership access is enforced by the API. Only project owners can manage
+        memberships when signed in with OIDC.</p>
 
       <section style={panel} aria-labelledby="identity-title">
-        <h2 id="identity-title">Your verified identity key</h2>
-        <p>Share this key privately with a project owner so they can grant access.
-          It is derived from your authenticated identity, not your email address.</p>
-        {identity ? (
-          <div style={{ overflowWrap: "anywhere", fontFamily: "monospace", fontSize: 13 }}>
+        <h2 id="identity-title">
+          {isOidcIdentity(identity) ? "Your verified OIDC identity key" : "Authentication mode"}
+        </h2>
+        {isOidcIdentity(identity) ? (
+          <>
+            <p>Share this key privately with a project owner so they can grant access.
+              It is derived from your verified OIDC identity, not your email address.</p>
+            <div style={{ overflowWrap: "anywhere", fontFamily: "monospace", fontSize: 13 }}>
             <code>{identity.principal_key}</code>
             <div style={{ marginTop: 12 }}>
               <button style={action} type="button" onClick={() => {
@@ -168,7 +172,13 @@ export function ProjectMembershipManager() {
               }}>Copy identity key</button>
             </div>
           </div>
-        ) : <p>{loading ? "Loading verified identity…" : "Identity unavailable."}</p>}
+          </>
+        ) : identity ? (
+          <p role="status">Local or service-operator mode is active ({identity.kind}).
+            This administrative identity is not a verified OIDC user account. A local
+            research project may have no owner membership record; multi-user member
+            management requires separately configured OIDC sign-in.</p>
+        ) : <p>{loading ? "Checking authentication mode…" : "Identity unavailable."}</p>}
       </section>
 
       <section style={panel} aria-labelledby="projects-title">
@@ -200,12 +210,19 @@ export function ProjectMembershipManager() {
             <>
               <p>Verify the recipient's identity key through a trusted channel
                 before granting them access. Ownership transfer is intentionally unavailable.</p>
+              {!busy && members.length === 0 && (
+                <p role="status">No project memberships are registered.
+                  {identity && !isOidcIdentity(identity)
+                    ? " This is expected for projects created in local operator mode."
+                    : " Check that this project has an assigned OIDC owner."}
+                </p>
+              )}
               <ul style={{ paddingLeft: 20 }}>
                 {members.map((member) => (
                   <li key={member.principal_key} style={{ margin: "12px 0", overflowWrap: "anywhere" }}>
                     <code style={{ fontSize: 12 }}>{member.principal_key}</code>
                     <strong style={{ marginLeft: 10 }}>{member.role}</strong>
-                    {member.role !== "owner" && (
+                    {member.role !== "owner" && isOidcIdentity(identity) && (
                       <button style={{ ...action, marginLeft: 10, background: "#884034" }}
                         type="button" disabled={busy} onClick={() => {
                           void revokeMember(member.principal_key);
@@ -214,6 +231,7 @@ export function ProjectMembershipManager() {
                   </li>
                 ))}
               </ul>
+              {isOidcIdentity(identity) ? (
               <form onSubmit={(event) => { void saveMember(event); }}
                 style={{ display: "grid", gap: 12, maxWidth: 650, marginTop: 20 }}>
                 <label>Verified member key
@@ -237,6 +255,11 @@ export function ProjectMembershipManager() {
                   Save membership
                 </button>
               </form>
+              ) : (
+                <p role="status">Member invitations and role changes are unavailable in
+                  this local operator view. Configure an OIDC identity provider and
+                  dedicated user accounts to manage access for multiple users.</p>
+              )}
             </>
           )}
         </section>
