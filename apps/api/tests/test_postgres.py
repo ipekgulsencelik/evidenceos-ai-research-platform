@@ -94,7 +94,6 @@ async def test_postgres_literature_snapshots_and_audit_history() -> None:
         await engine.dispose()
 
 
-
 @pytest.mark.integration
 @pytest.mark.asyncio
 async def test_postgres_catalog_metadata_survives_new_session() -> None:
