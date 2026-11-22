@@ -25,6 +25,7 @@ from evidenceos.domain.errors import (
     ProjectNotFound,
 )
 from evidenceos.infrastructure.config import Settings, get_settings
+from evidenceos.infrastructure.oidc import OidcAccessTokenVerifier
 from evidenceos.infrastructure.providers.groq_evidence import (
     EvidenceProviderFailure,
     EvidenceProviderUnavailable,
@@ -64,6 +65,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         app.state.session_factory = async_sessionmaker(engine, expire_on_commit=False)
         async with httpx.AsyncClient(timeout=config.research_timeout_seconds) as client:
             app.state.http_client = client
+            if config.security_mode == "oidc":
+                app.state.oidc_verifier = OidcAccessTokenVerifier(config, client)
             try:
                 yield
             finally:
