@@ -6,12 +6,13 @@ import type { LiteratureProfile } from "./literature";
 import type { ResearchProject, ReviewRevision, SavedLiteratureEntry } from "./workspace";
 import type { GapComparison, LibraryItem, LibraryMetadata } from "./research-library";
 import type { SemanticGapReport } from "./semantic";
+import type { MethodologyReport } from "./methodology";
 
 type BackendPayload =
   | AcademicWork[] | CitationCheck | EvidenceReport | PdfReview | LiteratureProfile
   | ResearchProject | ResearchProject[] | ReviewRevision | ReviewRevision[]
   | SavedLiteratureEntry | SavedLiteratureEntry[]
-  | LibraryItem[] | LibraryMetadata | GapComparison | SemanticGapReport;
+  | LibraryItem[] | LibraryMetadata | GapComparison | SemanticGapReport | MethodologyReport;
 
 export interface GatewayResult {
   status: number;
@@ -31,7 +32,8 @@ export async function callBackend(path: string, init?: RequestInit): Promise<Gat
       cache: "no-store",
       signal: AbortSignal.timeout(path === "/api/v1/evidence/assess" ||
         path.endsWith("/literature/analyze-pdf") ||
-        path.endsWith("/semantic-gaps") ? 90000 : 30000),
+        path.endsWith("/semantic-gaps") ||
+        path.endsWith("/methodology-review") ? 90000 : 30000),
     });
     const payload: unknown = await upstream.json().catch(() => null);
     if (!payload || typeof payload !== "object") {
