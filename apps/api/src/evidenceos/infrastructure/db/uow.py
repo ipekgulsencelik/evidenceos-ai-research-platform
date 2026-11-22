@@ -8,8 +8,8 @@ from evidenceos.domain.ports.library import LibraryRepository
 from evidenceos.domain.ports.repositories import ProjectRepository
 from evidenceos.domain.ports.workspace import LiteratureRepository
 from evidenceos.infrastructure.db.repositories import (
-    SqlAlchemyLiteratureRepository,
     SqlAlchemyLibraryRepository,
+    SqlAlchemyLiteratureRepository,
     SqlAlchemyProjectRepository,
 )
 

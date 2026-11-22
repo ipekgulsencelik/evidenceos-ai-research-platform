@@ -17,8 +17,8 @@ from evidenceos.domain.entities.literature import (
 from evidenceos.domain.entities.project import ResearchDomain, ResearchProject
 from evidenceos.domain.entities.workspace import LiteratureEntry, ReviewRevision
 from evidenceos.infrastructure.db.models import (
-    LiteratureEntryRow,
     LibraryMetadataRow,
+    LiteratureEntryRow,
     ProjectRow,
     ReviewRevisionRow,
 )

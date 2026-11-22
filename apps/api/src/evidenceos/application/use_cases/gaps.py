@@ -29,6 +29,10 @@ class CompareEvidenceCoverage:
         if any(entry is None or entry.project_id != project_id for entry in entries):
             raise LiteratureEntryNotFound("A selected analysis is not in this project")
         validated = [entry for entry in entries if entry is not None]
+        if len({entry.profile.sha256 for entry in validated}) != len(validated):
+            raise InvalidResearchWorkspace(
+                "Select analyses of different PDFs, not repeated snapshots of one PDF"
+            )
         candidates: list[CoverageCandidate] = []
         for facet in FACET_ORDER:
             references: list[GroundedReference] = []

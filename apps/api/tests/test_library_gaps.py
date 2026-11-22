@@ -2,7 +2,7 @@
 
 from collections.abc import Iterator
 from dataclasses import replace
-from uuid import UUID, uuid4
+from uuid import UUID
 
 import pytest
 from fastapi.testclient import TestClient
@@ -68,7 +68,8 @@ async def test_catalog_is_scoped_and_metadata_does_not_modify_evidence() -> None
         CreateProjectCommand("Other project", ResearchDomain.ACADEMIC)
     )
     entry = await SaveLiteratureAnalysis(make_uow).execute(
-        first.id, make_profile("a", "Adolescent chatbot study.pdf", supported=(LiteratureFacet.AIM,))
+        first.id,
+        make_profile("a", "Adolescent chatbot study.pdf", supported=(LiteratureFacet.AIM,)),
     )
     stored = await UpdateLibraryMetadata(make_uow).execute(
         UpdateCatalogCommand(
@@ -219,7 +220,8 @@ def test_http_library_and_gap_selection(client: TestClient) -> None:
 
     async def seed() -> tuple[UUID, UUID]:
         first = await SaveLiteratureAnalysis(store).execute(
-            project_id, make_profile("e", "Paper on chatbot emotions", supported=(LiteratureFacet.AIM,))
+            project_id,
+            make_profile("e", "Paper on chatbot emotions", supported=(LiteratureFacet.AIM,)),
         )
         second = await SaveLiteratureAnalysis(store).execute(
             project_id, make_profile("f", "Paper on sample", supported=(LiteratureFacet.SAMPLE,))
