@@ -6,6 +6,11 @@ from uuid import UUID
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from evidenceos.domain.entities.access import (
+    AccessDecisionEvent,
+    ProjectMembership,
+    ProjectRole,
+)
 from evidenceos.domain.entities.library import LibraryMetadata, ReadingStatus
 from evidenceos.domain.entities.literature import (
     FindingStatus,
@@ -23,8 +28,10 @@ from evidenceos.domain.entities.quality import (
 )
 from evidenceos.domain.entities.workspace import LiteratureEntry, ReviewRevision
 from evidenceos.infrastructure.db.models import (
+    AccessDecisionRow,
     LibraryMetadataRow,
     LiteratureEntryRow,
+    ProjectMembershipRow,
     ProjectRow,
     QualityReviewRow,
     ReviewRevisionRow,
@@ -71,6 +78,77 @@ class SqlAlchemyProjectRepository:
             domain=ResearchDomain(row.domain),
             created_at=row.created_at,
         )
+
+
+class SqlAlchemyMembershipRepository:
+    def __init__(self, session: AsyncSession) -> None:
+        self._session = session
+
+    async def role_for(self, project_id: UUID, principal_key: str) -> ProjectRole | None:
+        row = await self._session.get(ProjectMembershipRow, (project_id, principal_key))
+        return ProjectRole(row.role) if row is not None else None
+
+    async def upsert(self, membership: ProjectMembership) -> None:
+        row = await self._session.get(
+            ProjectMembershipRow, (membership.project_id, membership.principal_key)
+        )
+        if row is None:
+            self._session.add(
+                ProjectMembershipRow(
+                    project_id=membership.project_id,
+                    principal_key=membership.principal_key,
+                    role=membership.role.value,
+                    created_at=membership.created_at,
+                )
+            )
+        else:
+            row.role = membership.role.value
+
+    async def project_ids_for(
+        self, principal_key: str, *, limit: int = 50
+    ) -> list[UUID]:
+        result = await self._session.scalars(
+            select(ProjectMembershipRow.project_id)
+            .where(ProjectMembershipRow.principal_key == principal_key)
+            .order_by(ProjectMembershipRow.created_at.desc())
+            .limit(limit)
+        )
+        return list(result.all())
+
+
+class SqlAlchemyAccessAuditRepository:
+    def __init__(self, session: AsyncSession) -> None:
+        self._session = session
+
+    async def append(self, event: AccessDecisionEvent) -> None:
+        self._session.add(
+            AccessDecisionRow(
+                id=event.id,
+                actor_key=event.actor_key,
+                project_id=event.project_id,
+                action=event.action,
+                outcome=event.outcome,
+                request_id=event.request_id,
+                created_at=event.created_at,
+            )
+        )
+
+    async def latest(
+        self, project_id: UUID, *, limit: int = 100
+    ) -> list[AccessDecisionEvent]:
+        result = await self._session.scalars(
+            select(AccessDecisionRow)
+            .where(AccessDecisionRow.project_id == project_id)
+            .order_by(AccessDecisionRow.created_at.desc(), AccessDecisionRow.id.desc())
+            .limit(limit)
+        )
+        return [
+            AccessDecisionEvent(
+                row.id, row.actor_key, row.project_id, row.action,
+                row.outcome, row.request_id, row.created_at,
+            )
+            for row in result.all()
+        ]
 
 
 class SqlAlchemyLiteratureRepository:
