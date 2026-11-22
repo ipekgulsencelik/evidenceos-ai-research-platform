@@ -218,7 +218,9 @@ def test_owner_manages_members_without_exposing_projects_or_transferring_ownersh
         for row in audit.events
     )
     assert any(
-        row.action == "membership.manage" and row.outcome == "denied" and row.actor_key == bob.key
+        row.action == ProjectAction.MANAGE_MEMBERS.value
+        and row.outcome == "denied"
+        and row.actor_key == bob.key
         for row in audit.events
     )
 
