@@ -187,3 +187,14 @@ browser session now uses a Redis-backed, centrally checked session allowlist;
 logout invalidates copied browser cookies, but **does not revoke an independently
 stolen JWT bearer token** at the API. Real identity-provider E2E tests and
 operational security hardening remain necessary.
+
+## Project member administration
+
+The API and browser workspace include **owner-only project membership
+management**: verified OIDC identity keys, bounded membership listing,
+assigning editor/reviewer/viewer and revoking project access. Direct promotion
+or demotion of project owners is explicitly blocked. Access is denied with 404
+for users who do not own the target project, and mutations are audited.
+
+See [owner-managed project memberships](docs/owner-managed-project-memberships.md)
+for setup, permissions, identity verification and security limitations.
