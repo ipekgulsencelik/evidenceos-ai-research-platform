@@ -1,7 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { isAssignableRole, isMemberKey, isProjectMember } from "./memberships.ts";
+import {
+  isAssignableRole, isMemberKey, isOidcIdentity, isProjectMember,
+} from "./memberships.ts";
 
 const key = "a".repeat(64);
 
@@ -24,4 +26,12 @@ test("UI forbids assigning owner and refuses malformed membership responses", ()
   assert.equal(isProjectMember({ principal_key: key, role: "administrator" }), false);
   assert.equal(isProjectMember({ principal_key: "alice", role: "owner" }), false);
   assert.equal(isProjectMember({ principal_key: key, role: "owner", created_at: "now" }), true);
+});
+
+test("local and service operators are not treated as verified OIDC end users", () => {
+  assert.equal(isOidcIdentity(null), false);
+  assert.equal(isOidcIdentity({ principal_key: key, kind: "local_operator" }), false);
+  assert.equal(isOidcIdentity({ principal_key: key, kind: "service_operator" }), false);
+  assert.equal(isOidcIdentity({ principal_key: "invalid", kind: "oidc_user" }), false);
+  assert.equal(isOidcIdentity({ principal_key: key, kind: "oidc_user" }), true);
 });

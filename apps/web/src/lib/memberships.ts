@@ -7,6 +7,10 @@ export interface VerifiedIdentity {
   kind: string;
 }
 
+export interface OidcIdentity extends VerifiedIdentity {
+  kind: "oidc_user";
+}
+
 export interface ProjectMember {
   principal_key: string;
   role: MemberRole;
@@ -27,4 +31,13 @@ export function isProjectMember(data: unknown): data is ProjectMember {
   return isMemberKey(value.principal_key) &&
     (value.role === "owner" || isAssignableRole(value.role)) &&
     typeof value.created_at === "string";
+}
+
+/** Only a verified OIDC principal can be shared to grant another user's access.
+ * Local/service operators are administrative credentials, not human accounts.
+ */
+export function isOidcIdentity(identity: VerifiedIdentity | null): identity is OidcIdentity {
+  return identity !== null &&
+    identity.kind === "oidc_user" &&
+    isMemberKey(identity.principal_key);
 }
