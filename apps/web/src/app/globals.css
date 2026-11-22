@@ -301,3 +301,29 @@ a { text-underline-offset:3px; }
 .methodology-item details { border-top:1px solid #e1eae8; padding-top:9px; margin-top:11px; font-size:12px; }
 .methodology-item summary { cursor:pointer; color:#167b74; font-weight:700; }
 .methodology-item blockquote { white-space:pre-wrap; border-left:3px solid #0e847a; margin:9px 0; padding:10px; background:white; }
+
+/* Source coverage and append-only researcher quality/bias triage. */
+.quality-bias-panel { border-top:1px solid #d7e8e5; margin-top:24px; padding-top:24px; }
+.quality-bias-panel > .field { width:100%; margin:10px 0 15px; }
+.quality-content { margin-top:16px; }
+.quality-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(320px,1fr)); gap:14px; margin:15px 0; }
+.quality-indicator { background:#f9fcfb; border:1px solid #d9e7e4; border-radius:12px; padding:16px; min-width:0; overflow-wrap:anywhere; }
+.quality-indicator h5 { margin:0 0 9px; font-size:14px; font-weight:800; }
+.quality-indicator p { font-size:12px; line-height:1.55; margin:7px 0; }
+.quality-indicator .quality-source-status { color:#127c73; font-weight:700; }
+.quality-indicator details { border-top:1px solid #dce8e5; padding:8px 0; margin-top:8px; font-size:12px; }
+.quality-indicator summary { color:#1a786e; cursor:pointer; font-weight:700; }
+.quality-indicator blockquote { border-left:3px solid #0f847a; background:white; padding:9px; margin:9px 0 0; white-space:pre-wrap; font-size:12px; }
+.quality-review-fields { display:grid; gap:11px; margin-top:11px; }
+.quality-review-fields label:not(.quality-confirm) { display:grid; gap:6px; font-size:11px; font-weight:700; color:#45646d; }
+.quality-review-fields .field { width:100%; margin:0; }
+.quality-confirm { display:flex; align-items:flex-start; gap:8px; font-size:11px; line-height:1.5; }
+.quality-confirm input { flex-shrink:0; width:16px; height:16px; accent-color:#0d8178; }
+.quality-last-review { color:#6f8589; font-size:10px; }
+.quality-history { border-top:1px solid #d9e7e4; padding-top:16px; margin-top:16px; }
+.quality-history-list { display:grid; gap:8px; margin-top:12px; max-height:420px; overflow:auto; }
+.quality-history-list article { padding:11px; border:1px solid #dbe8e4; border-radius:9px; background:#fff; overflow-wrap:anywhere; }
+.quality-history-list strong { font-size:12px; }
+.quality-history-list p { margin:6px 0; font-size:11px; white-space:pre-wrap; }
+.quality-notice { font-size:12px; color:#137c72; }
+@media(max-width:700px){ .quality-grid {grid-template-columns:minmax(0,1fr);} }
