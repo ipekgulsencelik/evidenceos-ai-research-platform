@@ -23,6 +23,7 @@ function configureOidc(): string {
 
 function activeCookie(): string {
   const encrypted = sealCookie(SESSION_COOKIE, {
+    sid: randomBytes(32).toString("base64url"),
     accessToken: "access-token-kept-confidential",
     expiresAt: Math.floor(Date.now() / 1000) + 300,
   });
@@ -48,12 +49,12 @@ test("unbound anonymous callback returns to sign-in without creating a session",
   assert.ok(!response.headers.get("set-cookie")?.includes(SESSION_COOKIE));
 });
 
-test("public GET login route does not invalidate a signed-in session", async () => {
+test("public GET login fails closed if existing session cannot be centrally verified", async () => {
   const origin = configureOidc();
   const response = await login(new NextRequest(origin + "/auth/login", {
     headers: { cookie: activeCookie() },
   }));
-  assert.equal(response.status, 303);
-  assert.equal(response.headers.get("location"), origin + "/");
+  assert.equal(response.status, 503);
+  assert.equal(response.headers.get("cache-control"), "no-store");
   assert.ok(!response.headers.get("set-cookie")?.includes(SESSION_COOKIE));
 });
