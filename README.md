@@ -182,5 +182,8 @@ same-origin sign-out action clears local session cookies.
 Configure a trusted identity provider, API audience, web client and exact
 redirect origin before enabling this mode. See the
 [OIDC browser setup and security limitations](docs/oidc-browser-pkce.md).
-This is **not yet a fully certified public multi-user deployment**; it lacks
-server-side session revocation and comprehensive operational hardening.
+This is **not yet a fully certified public multi-user deployment**. The
+browser session now uses a Redis-backed, centrally checked session allowlist;
+logout invalidates copied browser cookies, but **does not revoke an independently
+stolen JWT bearer token** at the API. Real identity-provider E2E tests and
+operational security hardening remain necessary.

@@ -18,11 +18,15 @@ function configureOidc(): string {
   process.env.EVIDENCEOS_OIDC_WEB_CLIENT_SECRET = "very-strong-provider-client-secret";
   process.env.EVIDENCEOS_WEB_ORIGIN = origin;
   process.env.EVIDENCEOS_WEB_SESSION_KEY = randomBytes(32).toString("base64url");
+  // Intentionally unreachable Redis instance; test that sign-in fails closed.
+  process.env.EVIDENCEOS_SESSION_REDIS_URL = "redis://127.0.0.1:1";
+  process.env.EVIDENCEOS_SESSION_REDIS_PASSWORD = "test-only-session-registry-password-012345678901";
   return origin;
 }
 
 function activeCookie(): string {
   const encrypted = sealCookie(SESSION_COOKIE, {
+    sid: randomBytes(32).toString("base64url"),
     accessToken: "access-token-kept-confidential",
     expiresAt: Math.floor(Date.now() / 1000) + 300,
   });
@@ -48,12 +52,12 @@ test("unbound anonymous callback returns to sign-in without creating a session",
   assert.ok(!response.headers.get("set-cookie")?.includes(SESSION_COOKIE));
 });
 
-test("public GET login route does not invalidate a signed-in session", async () => {
+test("public GET login fails closed if existing session cannot be centrally verified", async () => {
   const origin = configureOidc();
   const response = await login(new NextRequest(origin + "/auth/login", {
     headers: { cookie: activeCookie() },
   }));
-  assert.equal(response.status, 303);
-  assert.equal(response.headers.get("location"), origin + "/");
+  assert.equal(response.status, 503);
+  assert.equal(response.headers.get("cache-control"), "no-store");
   assert.ok(!response.headers.get("set-cookie")?.includes(SESSION_COOKIE));
 });

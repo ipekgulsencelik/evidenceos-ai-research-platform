@@ -27,6 +27,8 @@ EVIDENCEOS_OIDC_WEB_CLIENT_ID=your-web-client-id
 EVIDENCEOS_OIDC_WEB_CLIENT_SECRET=your-confidential-web-client-secret
 EVIDENCEOS_WEB_ORIGIN=http://127.0.0.1:3001
 EVIDENCEOS_WEB_SESSION_KEY=generate-a-new-random-key
+EVIDENCEOS_SESSION_REDIS_URL=redis://redis:6379
+EVIDENCEOS_SESSION_REDIS_PASSWORD=a-unique-strong-32-plus-character-secret
 ```
 
 Generate a new 32-byte random base64url key, for example:
@@ -35,8 +37,12 @@ Generate a new 32-byte random base64url key, for example:
 node -e "console.log(require('crypto').randomBytes(32).toString('base64url'))"
 ```
 
-Use the printed value for `EVIDENCEOS_WEB_SESSION_KEY`. Any key rotation
-invalidates all existing sessions. Never place the key in a GitHub issue,
+Use the printed value for `EVIDENCEOS_WEB_SESSION_KEY`. Generate an independent,
+at-least-32-character Redis password. Redis is private to the Docker Compose
+network and has no host port; this bundled Redis runs without persistence,
+so a container restart safely invalidates all browser sessions. In production,
+point `EVIDENCEOS_SESSION_REDIS_URL` to a managed `rediss://` TLS endpoint.
+Any session key rotation invalidates all existing cookies. Never place the key in a GitHub issue,
 screen recording or public deployment config.
 
 Local `http://localhost` or `http://127.0.0.1` origins are permitted only
@@ -69,6 +75,11 @@ a POST-only **Sign out** action. Local and service-token modes remain intact.
 - Access tokens are stored only in an **AES-256-GCM encrypted HttpOnly**
   cookie. The key is kept on the Next.js server. No access or refresh token
   is returned to browser JavaScript or displayed in page HTML.
+- Every cookie includes a cryptographically random, 256-bit session ID.
+  Redis stores only a SHA-256 fingerprint of that ID, with a TTL never longer
+  than the cookie. Every workspace request and backend API call checks the
+  centralized record; logout atomically deletes it. Redis outages deny access,
+  not bypass revocation.
 - Session duration is capped to 10 minutes and shortened to the IdP token
   lifetime. There is **no silent refresh** and no refresh token storage.
 - OIDC mode redirects unauthenticated HTML requests to login, returns 401
@@ -80,12 +91,16 @@ a POST-only **Sign out** action. Local and service-token modes remain intact.
 ## Limitations / mandatory follow-up
 
 This milestone is **not sufficient for a general public internet launch**.
-The encrypted session is **stateless**; clearing cookies on logout does not
-invalidate stolen copies until their short expiry. Provider SSO sessions are
-not ended by local logout. For higher assurance, add server-side revocation,
-device/session inventory, session anomaly detection, centralized logout,
+The browser session is **centrally revocable** through the Redis allowlist.
+Local logout revokes all copies of that browser cookie after the Redis DELETE
+succeeds. This does **not** revoke an independently stolen, raw JWT access
+token against the FastAPI resource server; such a bearer token can remain
+valid until its expiry or provider-side revocation. Also, already-in-flight
+API requests may finish after logout. Provider SSO sessions are not ended by
+local logout. For higher assurance, add token revocation/introspection as
+supported by the provider, device/session inventory, anomaly detection,
 IdP-specific token lifecycle policy, replay protection for OAuth transaction
-cookies, and automated identity-provider integration tests. Deploy only with
+cookies, and automated real-provider integration tests. Deploy only with
 TLS, trusted proxy configuration, external rate limiting, CSP/security headers,
 observability, and a dedicated security review.
 

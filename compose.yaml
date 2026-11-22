@@ -15,6 +15,21 @@ services:
       interval: 5s
       timeout: 5s
       retries: 12
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    # OIDC sessions live solely on the private network; no published port.
+    environment:
+      REDIS_PASSWORD: ${EVIDENCEOS_SESSION_REDIS_PASSWORD:-local-development-only-redis-secret-012345678901}
+    command:
+      - sh
+      - -c
+      - exec redis-server --save "" --appendonly no --requirepass "$$REDIS_PASSWORD"
+    healthcheck:
+      test: ["CMD-SHELL", "REDISCLI_AUTH=\"$$REDIS_PASSWORD\" redis-cli ping | grep -q PONG"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
   migrate:
     build:
       context: ./apps/api
@@ -69,11 +84,15 @@ services:
       EVIDENCEOS_OIDC_WEB_CLIENT_ID: ${EVIDENCEOS_OIDC_WEB_CLIENT_ID:-}
       EVIDENCEOS_OIDC_WEB_CLIENT_SECRET: ${EVIDENCEOS_OIDC_WEB_CLIENT_SECRET:-}
       EVIDENCEOS_WEB_SESSION_KEY: ${EVIDENCEOS_WEB_SESSION_KEY:-}
+      EVIDENCEOS_SESSION_REDIS_URL: ${EVIDENCEOS_SESSION_REDIS_URL:-redis://redis:6379}
+      EVIDENCEOS_SESSION_REDIS_PASSWORD: ${EVIDENCEOS_SESSION_REDIS_PASSWORD:-}
       EVIDENCEOS_WEB_ORIGIN: ${EVIDENCEOS_WEB_ORIGIN:-http://127.0.0.1:3001}
     ports:
       - "127.0.0.1:${EVIDENCEOS_WEB_HOST_PORT:-3001}:3000"
     depends_on:
       api:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/auth/health').then(r => process.exit((r.ok || r.status === 401) ? 0 : 1)).catch(() => process.exit(1))"]

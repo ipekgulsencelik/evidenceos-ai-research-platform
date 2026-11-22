@@ -3,6 +3,7 @@ import * as oidc from "openid-client";
 import { NextRequest, NextResponse } from "next/server";
 
 import { browserOidcSettings, discoverProvider } from "@/lib/oidc-client";
+import { createSessionId, getSessionRegistry } from "@/lib/session-registry";
 import {
   FLOW_COOKIE, SESSION_COOKIE, SESSION_MAX_SECONDS, cookieOptions, readFlow, readSession,
   sealCookie,
@@ -72,11 +73,15 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
     const lifetime = Math.min(SESSION_MAX_SECONDS, Math.floor(tokens.expires_in) - 30);
     if (lifetime < 30) return unsuccessful(settings.origin, settings.secureCookies, hasSession);
+    // No cookie is issued until a central, expiring allowlist record exists.
+    const sid = createSessionId();
+    await (await getSessionRegistry()).register(sid, lifetime);
     const response = NextResponse.redirect(new URL("/", settings.origin), { status: 303 });
     response.headers.set("Cache-Control", "no-store");
     response.cookies.set(
       SESSION_COOKIE,
       sealCookie(SESSION_COOKIE, {
+        sid,
         accessToken: tokens.access_token,
         expiresAt: Math.floor(Date.now() / 1000) + lifetime,
       }),
