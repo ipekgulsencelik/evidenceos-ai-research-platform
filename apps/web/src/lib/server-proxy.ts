@@ -4,11 +4,13 @@ import type { EvidenceReport } from "./evidence";
 import type { PdfReview } from "./document";
 import type { LiteratureProfile } from "./literature";
 import type { ResearchProject, ReviewRevision, SavedLiteratureEntry } from "./workspace";
+import type { GapComparison, LibraryItem, LibraryMetadata } from "./research-library";
 
 type BackendPayload =
   | AcademicWork[] | CitationCheck | EvidenceReport | PdfReview | LiteratureProfile
   | ResearchProject | ResearchProject[] | ReviewRevision | ReviewRevision[]
-  | SavedLiteratureEntry | SavedLiteratureEntry[];
+  | SavedLiteratureEntry | SavedLiteratureEntry[]
+  | LibraryItem[] | LibraryMetadata | GapComparison;
 
 export interface GatewayResult {
   status: number;
