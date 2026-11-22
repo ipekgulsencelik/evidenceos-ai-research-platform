@@ -22,16 +22,19 @@ class EnforceProjectAccess:
         self, actor: Principal, project_id: UUID, action: ProjectAction, request_id: str = ""
     ) -> None:
         async with self._factory() as uow:
-            role = None if actor.is_operator else await uow.memberships.role_for(
-                project_id, actor.key
+            role = (
+                None if actor.is_operator else await uow.memberships.role_for(project_id, actor.key)
             )
             allowed = actor.is_operator or role_allows(role, action)
             # Only writes and denials are journalled to keep read traffic bounded.
             if action is not ProjectAction.READ or not allowed:
                 await uow.access_audit.append(
                     AccessDecisionEvent.create(
-                        actor.key, project_id, action.value,
-                        "allowed" if allowed else "denied", request_id,
+                        actor.key,
+                        project_id,
+                        action.value,
+                        "allowed" if allowed else "denied",
+                        request_id,
                     )
                 )
                 await uow.commit()
@@ -47,16 +50,18 @@ class AssignProjectRole:
         self._factory = factory
 
     async def execute(
-        self, actor: Principal, project_id: UUID,
-        member_key: str, role: ProjectRole, request_id: str = "",
+        self,
+        actor: Principal,
+        project_id: UUID,
+        member_key: str,
+        role: ProjectRole,
+        request_id: str = "",
     ) -> None:
         async with self._factory() as uow:
-            actor_role = None if actor.is_operator else await uow.memberships.role_for(
-                project_id, actor.key
+            actor_role = (
+                None if actor.is_operator else await uow.memberships.role_for(project_id, actor.key)
             )
-            allowed = actor.is_operator or role_allows(
-                actor_role, ProjectAction.MANAGE_MEMBERS
-            )
+            allowed = actor.is_operator or role_allows(actor_role, ProjectAction.MANAGE_MEMBERS)
             if not allowed:
                 await uow.access_audit.append(
                     AccessDecisionEvent.create(
