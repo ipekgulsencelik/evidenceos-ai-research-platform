@@ -12,8 +12,8 @@ from evidenceos.domain.ports.workspace import LiteratureRepository
 from evidenceos.infrastructure.db.repositories import (
     SqlAlchemyAccessAuditRepository,
     SqlAlchemyLibraryRepository,
-    SqlAlchemyMembershipRepository,
     SqlAlchemyLiteratureRepository,
+    SqlAlchemyMembershipRepository,
     SqlAlchemyProjectRepository,
     SqlAlchemyQualityReviewRepository,
 )
