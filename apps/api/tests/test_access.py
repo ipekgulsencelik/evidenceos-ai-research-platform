@@ -126,3 +126,103 @@ def test_routes_hide_other_users_projects_and_filter_listing() -> None:
         assert client.get(f"/api/v1/projects/{project_id}/access-audit").status_code == 200
 
     assert any(event.outcome == "denied" for event in audit.events)
+
+
+def test_owner_manages_members_without_exposing_projects_or_transferring_ownership() -> None:
+    store: dict[UUID, ResearchProject] = {}
+    memberships = FakeMembershipRepository()
+    audit = FakeAccessAuditRepository()
+    alice, bob, charlie = user("alice"), user("bob"), user("charlie")
+    actor = {"current": alice}
+    app = create_app(
+        Settings(app_env="test", database_url="postgresql+asyncpg://u:p@localhost:5432/test")
+    )
+
+    def factory() -> FakeUnitOfWork:
+        return FakeUnitOfWork(store, memberships=memberships, access_audit=audit)
+
+    app.dependency_overrides[get_uow_factory] = lambda: factory
+    app.dependency_overrides[validate_service_credential] = lambda: actor["current"]
+
+    with TestClient(app) as client:
+        identity = client.get("/api/v1/identity")
+        assert identity.status_code == 200
+        assert identity.json() == {"principal_key": alice.key, "kind": "oidc_user"}
+
+        created = client.post(
+            "/api/v1/projects", json={"title": "Protected team study", "domain": "academic"}
+        )
+        assert created.status_code == 201, created.text
+        project_id = created.json()["id"]
+        root = f"/api/v1/projects/{project_id}/memberships"
+
+        owner_list = client.get(root)
+        assert owner_list.status_code == 200
+        assert [(row["principal_key"], row["role"]) for row in owner_list.json()] == [
+            (alice.key, "owner")
+        ]
+
+        # Non-members cannot list other projects or enumerate owner keys.
+        actor["current"] = charlie
+        assert client.get(root).status_code == 404
+        assert client.put(f"{root}/{bob.key}", json={"role": "editor"}).status_code == 404
+        assert client.delete(f"{root}/{alice.key}").status_code == 404
+        assert client.get(f"/api/v1/projects/{project_id}/access-audit").status_code == 404
+        assert client.get("/api/v1/identity").json()["principal_key"] == charlie.key
+
+        actor["current"] = alice
+        assert client.put(f"{root}/invalid-key", json={"role": "viewer"}).status_code == 422
+        assert client.put(f"{root}/{bob.key}", json={"role": "admin"}).status_code == 422
+        assert client.put(f"{root}/{bob.key}", json={"role": "viewer", "extra": 1}).status_code == 422
+        assert client.put(f"{root}/{charlie.key}", json={"role": "owner"}).status_code == 409
+        assert client.put(f"{root}/{alice.key}", json={"role": "viewer"}).status_code == 409
+        assert client.delete(f"{root}/{alice.key}").status_code == 409
+
+        grant = client.put(f"{root}/{bob.key}", json={"role": "reviewer"})
+        assert grant.status_code == 200, grant.text
+        assert grant.json()["principal_key"] == bob.key
+        assert grant.json()["role"] == "reviewer"
+        assert set(grant.json()) == {"principal_key", "role", "created_at"}
+
+        actor["current"] = bob
+        assert len(client.get("/api/v1/projects").json()) == 1
+        assert client.get(f"/api/v1/projects/{project_id}").status_code == 200
+        assert client.get(root).status_code == 404  # GET must require OWNER, not READ
+        assert client.put(f"{root}/{charlie.key}", json={"role": "editor"}).status_code == 404
+        assert client.delete(f"{root}/{alice.key}").status_code == 404
+        assert client.get(f"/api/v1/projects/{project_id}/access-audit").status_code == 404
+
+        actor["current"] = alice
+        promoted = client.put(f"{root}/{bob.key}", json={"role": "editor"})
+        assert promoted.status_code == 200
+        assert promoted.json()["role"] == "editor"
+        listed = client.get(root).json()
+        assert {r["principal_key"]: r["role"] for r in listed} == {
+            alice.key: "owner", bob.key: "editor"
+        }
+        assert client.delete(f"{root}/{bob.key}").status_code == 204
+        assert client.delete(f"{root}/{bob.key}").status_code == 404
+
+        actor["current"] = bob
+        assert client.get(f"/api/v1/projects/{project_id}").status_code == 404
+        assert client.get("/api/v1/projects").json() == []
+
+    assert await_membership_role(memberships, project_id, alice.key) is ProjectRole.OWNER
+    assert await_membership_role(memberships, project_id, bob.key) is None
+    assert any(
+        row.action == "membership.revoke" and row.outcome == "allowed"
+        and row.actor_key == alice.key
+        for row in audit.events
+    )
+    assert any(
+        row.action == "membership.manage" and row.outcome == "denied"
+        and row.actor_key == bob.key
+        for row in audit.events
+    )
+
+
+def await_membership_role(
+    memberships: FakeMembershipRepository, project_id: str, key: str
+) -> ProjectRole | None:
+    # Pure fake lookup: the SQL adapter is covered separately.
+    return memberships.rows.get((UUID(project_id), key))
