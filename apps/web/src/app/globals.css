@@ -230,3 +230,36 @@ a { text-underline-offset:3px; }
 @media (max-width:720px) {
   .literature-create-row .secondary-btn {width:100%; justify-content:center;}
 }
+
+
+/* Research Library and source-linked evidence coverage comparison */
+.research-library-panel { margin-top:14px; background:#fff; }
+.research-library-filters { display:grid; grid-template-columns:2fr 1fr 1fr; gap:12px; margin:18px 0; }
+.research-library-filters label,.research-library-meta label {
+  display:grid; gap:7px; color:#496673; font-size:11px; font-weight:700;
+}
+.research-library-items { display:grid; gap:12px; margin:18px 0; max-height:670px; overflow:auto; }
+.research-library-item { border:1px solid #dae6e3; background:#fbfdfc; border-radius:10px; padding:13px; }
+.research-library-item-heading { display:flex; justify-content:space-between; align-items:flex-start; gap:14px; }
+.research-library-item-heading small { color:#70858a; font-size:10px; }
+.research-library-choice { display:flex; align-items:center; gap:10px; font-weight:700; overflow-wrap:anywhere; }
+.research-library-choice input { width:17px; height:17px; flex-shrink:0; accent-color:#0c847b; }
+.research-library-meta { display:grid; grid-template-columns:150px 1fr auto; align-items:end; gap:9px; margin-top:12px; }
+.research-library-meta .field { width:100%; margin:0; }
+.research-library-footnote { display:block; color:#6f888e; margin-top:11px; }
+.research-library-notice { font-size:12px; color:#15796e; margin:10px 0; }
+.research-gap-panel { border-top:1px solid #d7e8e5; margin-top:22px; padding-top:21px; }
+.research-gap-panel .primary-btn { margin-top:15px; }
+.research-gap-results { margin-top:18px; }
+.research-gap-results h5 { font-weight:800; margin:15px 0 10px; }
+.research-gap-result { border:1px solid #d9e7e4; background:#f7fbfa; border-radius:10px; padding:15px; margin:11px 0; }
+.research-gap-result h6 {font-weight:750; font-size:14px; margin:0 0 7px;}
+.research-gap-result p {font-size:12px; line-height:1.6; margin:6px 0;}
+.research-gap-result details {border-top:1px solid #dfebe8; padding-top:8px; margin-top:8px; font-size:12px;}
+.research-gap-result summary {cursor:pointer; color:#167b74; font-weight:700;}
+.research-gap-result blockquote {margin:10px 0; padding:10px; white-space:pre-wrap; border-left:3px solid #0c847b; background:white;}
+@media(max-width:800px) {
+  .research-library-filters {grid-template-columns:1fr;}
+  .research-library-meta {grid-template-columns:1fr;}
+  .research-library-item-heading {flex-direction:column;}
+}

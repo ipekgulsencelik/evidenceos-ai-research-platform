@@ -4,6 +4,7 @@ import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
 import { CheckCircle2, CircleAlert, FileText, LoaderCircle } from "lucide-react";
 import { LiteratureReviewMatrix } from "@/components/literature-review-matrix";
 import { ResearchProjectPicker } from "@/components/research-project-picker";
+import { ResearchLibrary } from "@/components/research-library";
 
 import {
   isLiteratureProfile, literatureProfileCsv, reviewKey, validateLiteratureUpload,
@@ -28,6 +29,7 @@ function getWorkspaceError(value: unknown, fallback: string): string {
 export function ScientificLiteratureIntelligence() {
   const [file, setFile] = useState<File | null>(null);
   const [projectId, setProjectId] = useState("");
+  const [libraryRefresh, setLibraryRefresh] = useState(0);
   const [recordIds, setRecordIds] = useState<Record<string, string>>({});
   const [histories, setHistories] = useState<Record<string, ReviewRevision[]>>({});
   const [workspaceError, setWorkspaceError] = useState<string | null>(null);
@@ -227,6 +229,7 @@ export function ScientificLiteratureIntelligence() {
         Object.entries(current).filter(([key]) => !key.startsWith(profile.sha256 + ":")),
       ));
       setConsent(false);
+      if (projectId) setLibraryRefresh((previous) => previous + 1);
       setHistories({});
       setSavedKey(null);
     } catch (failure) {
@@ -267,6 +270,7 @@ export function ScientificLiteratureIntelligence() {
       </p>
 
       <ResearchProjectPicker projectId={projectId} onSelect={setProjectId} />
+      <ResearchLibrary projectId={projectId} refreshToken={libraryRefresh} />
       {loadingSaved && <p role="status" className="panel-subtitle">
         Loading saved research records from PostgreSQL…
       </p>}
