@@ -76,7 +76,8 @@ def signed_token(
 
 
 def mock_client(
-    jwks: dict[str, Any], *,
+    jwks: dict[str, Any],
+    *,
     status: int = 200,
     calls: list[str] | None = None,
 ) -> httpx.AsyncClient:
@@ -85,6 +86,7 @@ def mock_client(
             calls.append(str(request.url))
         assert str(request.url) == JWKS_URL
         return httpx.Response(status, json=jwks)
+
     return httpx.AsyncClient(transport=httpx.MockTransport(handle))
 
 
@@ -114,7 +116,8 @@ def test_oidc_mode_allows_pinned_production_configuration() -> None:
 
 @pytest.mark.asyncio
 async def test_valid_signed_access_token_maps_to_scoped_principal(
-    private_key: rsa.RSAPrivateKey, jwks: dict[str, Any],
+    private_key: rsa.RSAPrivateKey,
+    jwks: dict[str, Any],
 ) -> None:
     calls: list[str] = []
     async with mock_client(jwks, calls=calls) as client:
@@ -141,7 +144,8 @@ async def test_valid_signed_access_token_maps_to_scoped_principal(
 )
 @pytest.mark.asyncio
 async def test_invalid_identity_claims_are_rejected(
-    private_key: rsa.RSAPrivateKey, jwks: dict[str, Any],
+    private_key: rsa.RSAPrivateKey,
+    jwks: dict[str, Any],
     invalid_claims: dict[str, Any],
 ) -> None:
     async with mock_client(jwks) as client:
@@ -152,7 +156,8 @@ async def test_invalid_identity_claims_are_rejected(
 
 @pytest.mark.asyncio
 async def test_rejects_untrusted_keys_algorithms_and_malformed_tokens(
-    private_key: rsa.RSAPrivateKey, jwks: dict[str, Any],
+    private_key: rsa.RSAPrivateKey,
+    jwks: dict[str, Any],
 ) -> None:
     untrusted = rsa.generate_private_key(public_exponent=65537, key_size=2048)
     tokens = [
@@ -176,12 +181,15 @@ async def test_rejects_untrusted_keys_algorithms_and_malformed_tokens(
 
 @pytest.mark.asyncio
 async def test_expiry_is_required_even_for_valid_signature(
-    private_key: rsa.RSAPrivateKey, jwks: dict[str, Any],
+    private_key: rsa.RSAPrivateKey,
+    jwks: dict[str, Any],
 ) -> None:
     now = datetime.now(UTC)
     missing_exp = jwt.encode(
         {"iss": ISSUER, "aud": AUDIENCE, "sub": "researcher", "iat": now},
-        private_key, algorithm="RS256", headers={"kid": "primary"},
+        private_key,
+        algorithm="RS256",
+        headers={"kid": "primary"},
     )
     async with mock_client(jwks) as client:
         with pytest.raises(InvalidOidcToken):
@@ -198,17 +206,17 @@ async def test_expiry_is_required_even_for_valid_signature(
 )
 @pytest.mark.asyncio
 async def test_unusable_jwks_causes_fail_closed_unavailable(
-    private_key: rsa.RSAPrivateKey, bad_jwks: dict[str, Any],
+    private_key: rsa.RSAPrivateKey,
+    bad_jwks: dict[str, Any],
 ) -> None:
     async with mock_client(bad_jwks) as client:
         with pytest.raises(OidcProviderUnavailable):
-            await OidcAccessTokenVerifier(oidc_settings(), client).verify(
-                signed_token(private_key)
-            )
+            await OidcAccessTokenVerifier(oidc_settings(), client).verify(signed_token(private_key))
 
 
 def test_oidc_access_token_is_required_and_project_membership_is_enforced(
-    private_key: rsa.RSAPrivateKey, jwks: dict[str, Any],
+    private_key: rsa.RSAPrivateKey,
+    jwks: dict[str, Any],
 ) -> None:
     settings = oidc_settings()
     app = create_app(settings)
@@ -225,13 +233,14 @@ def test_oidc_access_token_is_required_and_project_membership_is_enforced(
 
     with TestClient(app) as test_client:
         # Replace managed real transport with deterministic, offline JWKS.
-        app.state.oidc_verifier = OidcAccessTokenVerifier(
-            settings, mock_client(jwks)
-        )
+        app.state.oidc_verifier = OidcAccessTokenVerifier(settings, mock_client(jwks))
         assert test_client.get("/api/v1/projects").status_code == 401
-        assert test_client.get(
-            "/api/v1/projects", headers={"Authorization": "Bearer not-a-jwt"}
-        ).status_code == 401
+        assert (
+            test_client.get(
+                "/api/v1/projects", headers={"Authorization": "Bearer not-a-jwt"}
+            ).status_code
+            == 401
+        )
         owned = test_client.post(
             "/api/v1/projects",
             json={"title": "Owned OIDC project", "domain": "academic"},
@@ -239,14 +248,21 @@ def test_oidc_access_token_is_required_and_project_membership_is_enforced(
         )
         assert owned.status_code == 201, owned.text
         project_id = owned.json()["id"]
-        assert test_client.get(
-            "/api/v1/projects", headers={"Authorization": "Bearer " + token}
-        ).json()[0]["id"] == project_id
-        assert test_client.get(
-            f"/api/v1/projects/{project_id}",
-            headers={"Authorization": "Bearer " + other},
-        ).status_code == 404
-        assert test_client.get(
-            "/api/v1/projects", headers={"Authorization": "Bearer " + other}
-        ).json() == []
+        assert (
+            test_client.get(
+                "/api/v1/projects", headers={"Authorization": "Bearer " + token}
+            ).json()[0]["id"]
+            == project_id
+        )
+        assert (
+            test_client.get(
+                f"/api/v1/projects/{project_id}",
+                headers={"Authorization": "Bearer " + other},
+            ).status_code
+            == 404
+        )
+        assert (
+            test_client.get("/api/v1/projects", headers={"Authorization": "Bearer " + other}).json()
+            == []
+        )
     assert any(a.outcome == "denied" for a in audits.events)
