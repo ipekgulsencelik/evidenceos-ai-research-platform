@@ -28,7 +28,9 @@ def upgrade() -> None:
         sa.PrimaryKeyConstraint("project_id", "principal_key"),
     )
     op.create_index(
-        "ix_project_memberships_principal", "project_memberships", ["principal_key"],
+        "ix_project_memberships_principal",
+        "project_memberships",
+        ["principal_key"],
     )
     op.create_table(
         "access_decision_events",
@@ -41,16 +43,19 @@ def upgrade() -> None:
         sa.Column("request_id", sa.String(length=64), nullable=False),
         sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
         sa.CheckConstraint(
-            "outcome IN ('allowed', 'denied')", name="ck_access_decision_outcome",
+            "outcome IN ('allowed', 'denied')",
+            name="ck_access_decision_outcome",
         ),
     )
     op.create_index(
         "ix_access_decisions_project_time",
-        "access_decision_events", ["project_id", "created_at"],
+        "access_decision_events",
+        ["project_id", "created_at"],
     )
     op.create_index(
         "ix_access_decisions_actor_time",
-        "access_decision_events", ["actor_key", "created_at"],
+        "access_decision_events",
+        ["actor_key", "created_at"],
     )
 
 
