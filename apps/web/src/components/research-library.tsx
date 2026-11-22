@@ -89,7 +89,10 @@ export function ResearchLibrary({ projectId, refreshToken }: Props) {
   function setDraft(id: string, changes: Partial<Draft>) {
     setDrafts((previous) => ({
       ...previous,
-      [id]: { status: "to_read", tags: "", ...previous[id], ...changes },
+      [id]: {
+        ...(previous[id] ?? { status: "to_read" as ReadingStatus, tags: "" }),
+        ...changes,
+      },
     }));
     setNotice(null);
   }
