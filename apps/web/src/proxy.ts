@@ -1,22 +1,46 @@
-/** Next.js 16 request boundary for the protected local single-operator workspace.
- *
- * Never use HTTP Basic over unencrypted public internet connections.
- * Use an external identity provider with TLS for any deployed multi-user system.
- */
+/** Next.js 16 HTTP boundary: Basic localhost mode or verified OIDC session. */
 import { NextRequest, NextResponse } from "next/server";
 
+import { browserOidcSettings } from "./lib/oidc-client";
+import { SESSION_COOKIE, readSession } from "./lib/oidc-session";
 import {
   isAuthorizedBasicHeader, securityEnabled, validSecurityConfiguration,
 } from "./lib/security";
 
 export function proxy(request: NextRequest): NextResponse {
-  // Backend OIDC verification is not a browser session. Do not let Basic Auth
-  // impersonate an OIDC user or silently expose API access without PKCE login.
   if (process.env.EVIDENCEOS_SECURITY_MODE === "oidc") {
-    return new NextResponse("OIDC browser login is not configured.", {
-      status: 503,
-      headers: { "Cache-Control": "no-store" },
+    const settings = browserOidcSettings();
+    if (!settings) return new NextResponse("OIDC browser sign-in is not configured.", {
+      status: 503, headers: { "Cache-Control": "no-store" },
     });
+    const path = request.nextUrl.pathname;
+    const publicRoutes = ["/signin", "/auth/login", "/auth/callback", "/auth/health"];
+    if (publicRoutes.includes(path)) return NextResponse.next();
+
+    // Logout is POST-only and checks Origin in its route handler.
+    if (path === "/auth/logout") return NextResponse.next();
+
+    const session = readSession(request.cookies.get(SESSION_COOKIE)?.value);
+    if (!session) {
+      if (path.startsWith("/api/")) return NextResponse.json(
+        { detail: "Authentication required" },
+        { status: 401, headers: { "Cache-Control": "no-store" } },
+      );
+      const response = NextResponse.redirect(new URL("/signin", settings.origin));
+      response.headers.set("Cache-Control", "no-store");
+      return response;
+    }
+
+    // SameSite cookies alone do not protect against all cross-origin or
+    // same-site attackers. Mutations require a same-origin browser request.
+    if (path.startsWith("/api/") && !["GET", "HEAD", "OPTIONS"].includes(request.method) &&
+        request.headers.get("origin") !== settings.origin) {
+      return NextResponse.json(
+        { detail: "Cross-origin mutation denied" },
+        { status: 403, headers: { "Cache-Control": "no-store" } },
+      );
+    }
+    return NextResponse.next();
   }
 
   if (!securityEnabled(process.env.EVIDENCEOS_APP_ENV, process.env.EVIDENCEOS_SECURITY_MODE)) {
@@ -33,7 +57,7 @@ export function proxy(request: NextRequest): NextResponse {
     });
   }
 
-  // Credentials are kept on the server; the browser receives only a Basic challenge.
+  // Legacy localhost Basic mode remains unchanged. Never use over public HTTP.
   if (!isAuthorizedBasicHeader(request.headers.get("authorization"), username!, password!)) {
     return new NextResponse("Authentication required.", {
       status: 401,
