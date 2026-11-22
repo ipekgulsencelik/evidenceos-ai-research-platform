@@ -6,6 +6,7 @@ import pytest
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
+from evidenceos.application.use_cases.access import AssignProjectRole, EnforceProjectAccess
 from evidenceos.application.use_cases.library import (
     ListLibraryItems,
     UpdateCatalogCommand,
@@ -29,6 +30,7 @@ from evidenceos.application.use_cases.workspace import (
     SaveReviewCommand,
     SaveReviewRevision,
 )
+from evidenceos.domain.entities.access import Principal, ProjectAction, ProjectRole, stable_subject_key
 from evidenceos.domain.entities.library import ReadingStatus
 from evidenceos.domain.entities.literature import LiteratureFacet
 from evidenceos.domain.entities.project import ResearchDomain
@@ -184,5 +186,53 @@ async def test_postgres_quality_revision_migration_and_latest_judgments() -> Non
         assert checklist.latest_reviews[0].reporting is ReportingJudgment.UNCLEAR_AFTER_REVIEW
         revisions = await ListQualityReviewHistory(make_uow).execute(project.id, entry.id)
         assert revisions == [second, first]
+    finally:
+        await engine.dispose()
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_postgres_project_membership_rbac_and_access_history() -> None:
+    """Alembic 0005 preserves scoped memberships and append-only access decisions."""
+    dsn = os.getenv("EVIDENCEOS_TEST_DATABASE_URL")
+    if not dsn:
+        pytest.skip("requires an explicit disposable PostgreSQL test database")
+    engine = create_async_engine(dsn)
+    try:
+        sessions = async_sessionmaker(engine, expire_on_commit=False)
+
+        def factory() -> SqlAlchemyUnitOfWork:
+            return SqlAlchemyUnitOfWork(sessions)
+
+        alice = Principal(stable_subject_key("https://issuer.example", "alice"), "oidc_user")
+        bob = Principal(stable_subject_key("https://issuer.example", "bob"), "oidc_user")
+        project = await CreateProject(factory).execute(
+            CreateProjectCommand("Rbac audit migration", ResearchDomain.ACADEMIC),
+            actor=alice,
+        )
+        async with factory() as uow:
+            assert await uow.memberships.role_for(project.id, alice.key) is ProjectRole.OWNER
+            assert await uow.memberships.role_for(project.id, bob.key) is None
+            assert [p.id for p in await uow.projects.list_for_principal(alice.key)] == [project.id]
+            assert await uow.projects.list_for_principal(bob.key) == []
+
+        await AssignProjectRole(factory).execute(
+            alice, project.id, bob.key, ProjectRole.VIEWER, "test-request"
+        )
+        await EnforceProjectAccess(factory).execute(bob, project.id, ProjectAction.READ)
+        from evidenceos.domain.errors import ProjectNotFound
+
+        with pytest.raises(ProjectNotFound):
+            await EnforceProjectAccess(factory).execute(
+                bob, project.id, ProjectAction.WRITE, "denied-request"
+            )
+        async with factory() as uow:
+            history = await uow.access_audit.latest(project.id)
+            assert any(e.action == "project.create" and e.outcome == "allowed" for e in history)
+            assert any(e.action == "membership.assign" for e in history)
+            denied = [e for e in history if e.outcome == "denied"]
+            assert len(denied) == 1
+            assert denied[0].actor_key == bob.key
+            assert denied[0].request_id == "denied-request"
     finally:
         await engine.dispose()
