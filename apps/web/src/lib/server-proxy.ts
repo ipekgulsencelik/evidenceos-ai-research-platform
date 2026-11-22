@@ -8,6 +8,10 @@ import type { GapComparison, LibraryItem, LibraryMetadata } from "./research-lib
 import type { SemanticGapReport } from "./semantic";
 import type { MethodologyReport } from "./methodology";
 import type { QualityChecklist, QualityRevision } from "./quality";
+import { cookies } from "next/headers";
+
+import { browserOidcSettings } from "./oidc-client";
+import { SESSION_COOKIE, readSession } from "./oidc-session";
 import { securityEnabled } from "./security";
 
 type BackendPayload =
@@ -27,16 +31,26 @@ function endpoint(path: string): URL {
 }
 
 export async function callBackend(path: string, init?: RequestInit): Promise<GatewayResult> {
-  // A browser session must be implemented before forwarding OIDC user tokens.
-  if (process.env.EVIDENCEOS_SECURITY_MODE === "oidc") {
-    return { status: 503, body: { detail: "OIDC browser sessions are not configured." } };
-  }
+  const oidc = process.env.EVIDENCEOS_SECURITY_MODE === "oidc";
   const protectedMode = securityEnabled(
     process.env.EVIDENCEOS_APP_ENV, process.env.EVIDENCEOS_SECURITY_MODE,
   );
-  const token = process.env.EVIDENCEOS_API_SERVICE_TOKEN;
-  if (protectedMode && (!token || token.length < 32)) {
-    return { status: 503, body: { detail: "Research service authentication is not configured." } };
+  let token: string | undefined;
+  if (oidc) {
+    if (!browserOidcSettings()) {
+      return { status: 503, body: { detail: "Browser OIDC sign-in is not configured." } };
+    }
+    const cookieStore = await cookies();
+    const session = readSession(cookieStore.get(SESSION_COOKIE)?.value);
+    if (!session) {
+      return { status: 401, body: { detail: "Authentication required." } };
+    }
+    token = session.accessToken;
+  } else {
+    token = process.env.EVIDENCEOS_API_SERVICE_TOKEN;
+    if (protectedMode && (!token || token.length < 32)) {
+      return { status: 503, body: { detail: "Research service authentication is not configured." } };
+    }
   }
   try {
     const upstream = await fetch(endpoint(path), {
@@ -46,6 +60,7 @@ export async function callBackend(path: string, init?: RequestInit): Promise<Gat
         ...(protectedMode ? { Authorization: `Bearer ${token}` } : {}),
       },
       cache: "no-store",
+      redirect: "manual",
       signal: AbortSignal.timeout(path === "/api/v1/evidence/assess" ||
         path.endsWith("/literature/analyze-pdf") ||
         path.endsWith("/semantic-gaps") ||
