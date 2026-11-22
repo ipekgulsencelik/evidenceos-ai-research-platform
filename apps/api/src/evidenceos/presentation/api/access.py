@@ -13,14 +13,14 @@ from evidenceos.presentation.api.security import validate_service_credential
 
 
 def required_project_action(request: Request) -> ProjectAction:
-    if request.url.path.endswith("/access-audit"):
+    # Both reads and mutations of membership data require owner privileges.
+    # This check MUST precede the generic GET / HEAD read permission.
+    if request.url.path.endswith("/access-audit") or "/memberships" in request.url.path:
         return ProjectAction.MANAGE_MEMBERS
     if request.method in ("GET", "HEAD"):
         return ProjectAction.READ
     if request.url.path.endswith("/reviews") or request.url.path.endswith("/quality-reviews"):
         return ProjectAction.REVIEW
-    if request.url.path.endswith("/memberships"):
-        return ProjectAction.MANAGE_MEMBERS
     return ProjectAction.WRITE
 
 

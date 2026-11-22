@@ -6,7 +6,11 @@ import pytest
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
-from evidenceos.application.use_cases.access import AssignProjectRole, EnforceProjectAccess
+from evidenceos.application.use_cases.access import (
+    AssignProjectRole,
+    EnforceProjectAccess,
+    ManageProjectMemberships,
+)
 from evidenceos.application.use_cases.library import (
     ListLibraryItems,
     UpdateCatalogCommand,
@@ -239,5 +243,55 @@ async def test_postgres_project_membership_rbac_and_access_history() -> None:
             assert len(denied) == 1
             assert denied[0].actor_key == bob.key
             assert denied[0].request_id == "denied-request"
+    finally:
+        await engine.dispose()
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_postgres_owner_membership_grant_listing_and_revocation() -> None:
+    """Owner-only membership operations persist atomically in PostgreSQL."""
+    dsn = os.getenv("EVIDENCEOS_TEST_DATABASE_URL")
+    if not dsn:
+        pytest.skip("requires an explicit disposable PostgreSQL test database")
+    engine = create_async_engine(dsn)
+    try:
+        sessions = async_sessionmaker(engine, expire_on_commit=False)
+
+        def factory() -> SqlAlchemyUnitOfWork:
+            return SqlAlchemyUnitOfWork(sessions)
+
+        from evidenceos.domain.errors import InvalidMembershipChange, ProjectNotFound
+
+        alice = Principal(stable_subject_key("https://issuer.example", "team-owner"), "oidc_user")
+        bob = Principal(stable_subject_key("https://issuer.example", "team-reviewer"), "oidc_user")
+        outsider = Principal(stable_subject_key("https://issuer.example", "outsider"), "oidc_user")
+        project = await CreateProject(factory).execute(
+            CreateProjectCommand("Member persistence regression", ResearchDomain.ACADEMIC),
+            actor=alice,
+        )
+        admin = ManageProjectMemberships(factory)
+        rows = await admin.list_members(alice, project.id)
+        assert [(m.principal_key, m.role) for m in rows] == [(alice.key, ProjectRole.OWNER)]
+        with pytest.raises(ProjectNotFound):
+            await admin.list_members(outsider, project.id)
+        with pytest.raises(InvalidMembershipChange):
+            await admin.assign(alice, project.id, bob.key, ProjectRole.OWNER)
+
+        granted = await admin.assign(alice, project.id, bob.key, ProjectRole.REVIEWER)
+        assert granted.role is ProjectRole.REVIEWER
+        assigned_members = await admin.list_members(alice, project.id)
+        listed_roles = {row.principal_key: row.role for row in assigned_members}
+        assert listed_roles == {alice.key: ProjectRole.OWNER, bob.key: ProjectRole.REVIEWER}
+        with pytest.raises(ProjectNotFound):
+            await admin.assign(bob, project.id, outsider.key, ProjectRole.VIEWER)
+        with pytest.raises(InvalidMembershipChange):
+            await admin.revoke(alice, project.id, alice.key)
+        await admin.revoke(alice, project.id, bob.key)
+        async with factory() as uow:
+            assert await uow.memberships.role_for(project.id, alice.key) is ProjectRole.OWNER
+            assert await uow.memberships.role_for(project.id, bob.key) is None
+            actions = await uow.access_audit.latest(project.id)
+            assert any(event.action == "membership.revoke" for event in actions)
     finally:
         await engine.dispose()

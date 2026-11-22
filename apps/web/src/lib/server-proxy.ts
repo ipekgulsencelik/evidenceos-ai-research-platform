@@ -73,6 +73,11 @@ export async function callBackend(path: string, init?: RequestInit): Promise<Gat
         path.endsWith("/semantic-gaps") ||
         path.endsWith("/methodology-review") ? 90000 : 30000),
     });
+    // HTTP 204 intentionally has no response body. Preserve it for DELETE
+    // instead of classifying the valid empty response as an upstream failure.
+    if (upstream.status === 204) {
+      return { status: 204, body: { detail: "" } };
+    }
     const payload: unknown = await upstream.json().catch(() => null);
     if (!payload || typeof payload !== "object") {
       return { status: 502, body: { detail: "Unexpected response from research service." } };

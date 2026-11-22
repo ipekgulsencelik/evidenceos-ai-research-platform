@@ -123,6 +123,18 @@ class FakeMembershipRepository:
     async def upsert(self, membership: ProjectMembership) -> None:
         self.rows[(membership.project_id, membership.principal_key)] = membership.role
 
+    async def list_for_project(
+        self, project_id: UUID, *, limit: int = 100
+    ) -> list[ProjectMembership]:
+        return [
+            ProjectMembership.create(project_id, key, role)
+            for (pid, key), role in self.rows.items()
+            if pid == project_id
+        ][:limit]
+
+    async def delete(self, project_id: UUID, principal_key: str) -> bool:
+        return self.rows.pop((project_id, principal_key), None) is not None
+
     async def project_ids_for(self, principal_key: str, *, limit: int = 50) -> list[UUID]:
         return [project_id for (project_id, key), _ in self.rows.items() if key == principal_key][
             :limit

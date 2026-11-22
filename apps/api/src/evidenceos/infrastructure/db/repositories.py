@@ -124,6 +124,32 @@ class SqlAlchemyMembershipRepository:
         else:
             row.role = membership.role.value
 
+    async def list_for_project(
+        self, project_id: UUID, *, limit: int = 100
+    ) -> list[ProjectMembership]:
+        result = await self._session.scalars(
+            select(ProjectMembershipRow)
+            .where(ProjectMembershipRow.project_id == project_id)
+            .order_by(
+                ProjectMembershipRow.created_at.asc(),
+                ProjectMembershipRow.principal_key.asc(),
+            )
+            .limit(limit)
+        )
+        return [
+            ProjectMembership(
+                row.project_id, row.principal_key, ProjectRole(row.role), row.created_at
+            )
+            for row in result.all()
+        ]
+
+    async def delete(self, project_id: UUID, principal_key: str) -> bool:
+        row = await self._session.get(ProjectMembershipRow, (project_id, principal_key))
+        if row is None:
+            return False
+        await self._session.delete(row)
+        return True
+
     async def project_ids_for(self, principal_key: str, *, limit: int = 50) -> list[UUID]:
         result = await self._session.scalars(
             select(ProjectMembershipRow.project_id)

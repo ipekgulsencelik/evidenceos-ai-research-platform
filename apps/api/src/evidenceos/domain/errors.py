@@ -32,3 +32,7 @@ class LiteratureEntryNotFound(DomainError):
 
 class InvalidResearchWorkspace(DomainError):
     """A research workspace operation is invalid or not permitted."""
+
+
+class InvalidMembershipChange(DomainError):
+    """A membership mutation violates owner protection or transfer policy."""

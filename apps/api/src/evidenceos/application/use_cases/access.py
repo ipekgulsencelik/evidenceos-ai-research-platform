@@ -10,8 +10,8 @@ from evidenceos.domain.entities.access import (
     ProjectRole,
     role_allows,
 )
-from evidenceos.domain.errors import ProjectNotFound
-from evidenceos.domain.ports.repositories import UnitOfWorkFactory
+from evidenceos.domain.errors import InvalidMembershipChange, ProjectNotFound
+from evidenceos.domain.ports.repositories import UnitOfWork, UnitOfWorkFactory
 
 
 class EnforceProjectAccess:
@@ -76,6 +76,91 @@ class AssignProjectRole:
             await uow.access_audit.append(
                 AccessDecisionEvent.create(
                     actor.key, project_id, "membership.assign", "allowed", request_id
+                )
+            )
+            await uow.commit()
+
+
+class ManageProjectMemberships:
+    """Owner-only administration. This command never grants or mutates OWNER.
+
+    Ownership transfer requires a separate explicit, audited workflow. No
+    caller-controlled email/subject is treated as an authenticated identity:
+    member_key must originate from the target user's verified identity API.
+    """
+
+    def __init__(self, factory: UnitOfWorkFactory) -> None:
+        self._factory = factory
+
+    async def _ensure_owner(
+        self, uow: UnitOfWork, actor: Principal, project_id: UUID, request_id: str
+    ) -> None:
+        role = None if actor.is_operator else await uow.memberships.role_for(project_id, actor.key)
+        if not (actor.is_operator or role is ProjectRole.OWNER):
+            await uow.access_audit.append(
+                AccessDecisionEvent.create(
+                    actor.key, project_id, "membership.manage", "denied", request_id
+                )
+            )
+            await uow.commit()
+            # Hide project existence from all unauthorized principals.
+            raise ProjectNotFound(f"project '{project_id}' not found")
+        if await uow.projects.get(project_id) is None:
+            raise ProjectNotFound(f"project '{project_id}' not found")
+
+    async def list_members(
+        self, actor: Principal, project_id: UUID, request_id: str = ""
+    ) -> list[ProjectMembership]:
+        async with self._factory() as uow:
+            await self._ensure_owner(uow, actor, project_id, request_id)
+            return await uow.memberships.list_for_project(project_id)
+
+    async def assign(
+        self,
+        actor: Principal,
+        project_id: UUID,
+        member_key: str,
+        role: ProjectRole,
+        request_id: str = "",
+    ) -> ProjectMembership:
+        async with self._factory() as uow:
+            await self._ensure_owner(uow, actor, project_id, request_id)
+            existing = await uow.memberships.role_for(project_id, member_key)
+            if (
+                role is ProjectRole.OWNER
+                or existing is ProjectRole.OWNER
+                or member_key == actor.key
+            ):
+                raise InvalidMembershipChange(
+                    "Owner memberships cannot be changed through this endpoint"
+                )
+            membership = ProjectMembership.create(project_id, member_key, role)
+            await uow.memberships.upsert(membership)
+            await uow.access_audit.append(
+                AccessDecisionEvent.create(
+                    actor.key, project_id, "membership.assign", "allowed", request_id
+                )
+            )
+            await uow.commit()
+            return membership
+
+    async def revoke(
+        self, actor: Principal, project_id: UUID, member_key: str, request_id: str = ""
+    ) -> None:
+        async with self._factory() as uow:
+            await self._ensure_owner(uow, actor, project_id, request_id)
+            existing = await uow.memberships.role_for(project_id, member_key)
+            if existing is ProjectRole.OWNER or member_key == actor.key:
+                raise InvalidMembershipChange(
+                    "Owner memberships cannot be revoked through this endpoint"
+                )
+            if existing is None:
+                raise ProjectNotFound("membership not found")
+            if not await uow.memberships.delete(project_id, member_key):
+                raise ProjectNotFound("membership not found")
+            await uow.access_audit.append(
+                AccessDecisionEvent.create(
+                    actor.key, project_id, "membership.revoke", "allowed", request_id
                 )
             )
             await uow.commit()

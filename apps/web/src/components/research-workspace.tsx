@@ -22,6 +22,7 @@ import {
   PanelTop,
   Search,
   ShieldCheck,
+  UsersRound,
   Sparkles,
 } from "lucide-react";
 import { useRef, useState, type FormEvent } from "react";
@@ -71,6 +72,7 @@ function Sidebar() {
         <div className="side-group">
           <a className="side-link" href="#overview"><PanelTop size={17} /> Overview</a>
           <a className="side-link active" aria-current="page" href="#research-search"><BookOpenText size={17} /> Academic Research</a>
+          <a className="side-link" href="/projects"><UsersRound size={17} /> Projects &amp; members</a>
           <a className="side-link" href="#citation-verification"><ShieldCheck size={17} /> DOI Verification</a>
           <a className="side-link" href="#evidence-review"><FileSearch size={17} /> Evidence Review</a>
         </div>
