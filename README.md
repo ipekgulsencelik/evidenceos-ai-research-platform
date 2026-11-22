@@ -210,3 +210,16 @@ Run the protected `OIDC browser E2E (disposable staging)` GitHub Actions
 workflow only after configuring an isolated HTTPS staging deployment and two
 dedicated test identities. It creates a disposable project.
 See [real provider E2E setup](docs/oidc-real-provider-e2e.md).
+
+## Isolated local multi-user OIDC test environment
+
+A second, explicitly selected Docker Compose stack provides a **disposable**
+Keycloak OIDC issuer, separate PostgreSQL and Redis, and dedicated API/web
+ports for testing two real signed-in users on one machine. It leaves the
+original `compose.yaml`, `.env`, primary data and localhost port 3001
+unchanged. A Python bootstrap script generates ignored, random credentials
+and development TLS files; actual certificate trust setup requires explicit
+user action. The browser E2E suite runs only after manual staging launch.
+
+See [isolated local OIDC staging](docs/isolated-local-oidc-staging.md).
+This is for local testing only and is not a public production deployment.
