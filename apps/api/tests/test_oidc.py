@@ -214,6 +214,54 @@ async def test_unusable_jwks_causes_fail_closed_unavailable(
             await OidcAccessTokenVerifier(oidc_settings(), client).verify(signed_token(private_key))
 
 
+@pytest.mark.asyncio
+async def test_jwks_stream_is_stopped_before_oversized_body_is_downloaded(
+    private_key: rsa.RSAPrivateKey,
+) -> None:
+    """Unbounded or decompressed JWKS bodies must not be buffered in memory."""
+    emitted = [0]
+
+    class GiantStream(httpx.AsyncByteStream):
+        async def __aiter__(self):  # type: ignore[no-untyped-def]
+            for _ in range(2000):
+                emitted[0] += 1
+                yield b"x" * 4096
+
+    def handle(request: httpx.Request) -> httpx.Response:
+        assert str(request.url) == JWKS_URL
+        return httpx.Response(200, stream=GiantStream())
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handle)) as client:
+        verifier = OidcAccessTokenVerifier(oidc_settings(), client)
+        with pytest.raises(OidcProviderUnavailable):
+            await verifier.verify(signed_token(private_key))
+    # 2000 chunks existed, but verifier must stop after about 64 KiB.
+    assert emitted[0] <= 20
+
+
+@pytest.mark.asyncio
+async def test_failed_unknown_kid_refresh_uses_cooldown(
+    private_key: rsa.RSAPrivateKey, jwks: dict[str, Any],
+) -> None:
+    """Malicious unknown kids cannot hammer a failing IdP on every request."""
+    calls: list[str] = []
+
+    def handle(request: httpx.Request) -> httpx.Response:
+        calls.append(str(request.url))
+        if len(calls) == 1:
+            return httpx.Response(200, json=jwks)
+        return httpx.Response(503)
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handle)) as client:
+        verifier = OidcAccessTokenVerifier(oidc_settings(), client)
+        await verifier.verify(signed_token(private_key))
+        forged_unknown_kid = signed_token(private_key, kid="malicious-unknown-kid")
+        for _ in range(4):
+            with pytest.raises(OidcProviderUnavailable):
+                await verifier.verify(forged_unknown_kid)
+    assert calls == [JWKS_URL, JWKS_URL]
+
+
 def test_oidc_access_token_is_required_and_project_membership_is_enforced(
     private_key: rsa.RSAPrivateKey,
     jwks: dict[str, Any],
