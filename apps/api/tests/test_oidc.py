@@ -1,6 +1,7 @@
 """No-network OIDC access token verification and RBAC integration regression tests."""
 
 import json
+from collections.abc import AsyncIterator
 from datetime import UTC, datetime, timedelta
 from typing import Any
 from uuid import UUID
@@ -222,7 +223,7 @@ async def test_jwks_stream_is_stopped_before_oversized_body_is_downloaded(
     emitted = [0]
 
     class GiantStream(httpx.AsyncByteStream):
-        async def __aiter__(self):  # type: ignore[no-untyped-def]
+        async def __aiter__(self) -> AsyncIterator[bytes]:
             for _ in range(2000):
                 emitted[0] += 1
                 yield b"x" * 4096
