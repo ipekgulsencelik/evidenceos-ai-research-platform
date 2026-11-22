@@ -10,16 +10,17 @@ import logging
 
 from fastapi import HTTPException, Request, status
 
+from evidenceos.domain.entities.access import LOCAL_OPERATOR, SERVICE_OPERATOR, Principal
 from evidenceos.infrastructure.config import Settings
 
 logger = logging.getLogger(__name__)
 
 
-def validate_service_credential(request: Request) -> None:
+def validate_service_credential(request: Request) -> Principal:
     """Fail closed for service-token mode; leave local development unchanged."""
     settings: Settings = request.app.state.settings
     if settings.security_mode == "local":
-        return
+        return LOCAL_OPERATOR
 
     supplied = request.headers.getlist("authorization")
     if len(supplied) == 1:
@@ -35,7 +36,7 @@ def validate_service_credential(request: Request) -> None:
             expected = hashlib.sha256(settings.api_service_token.encode("utf-8")).digest()
             actual = hashlib.sha256(token.encode("utf-8")).digest()
             if hmac.compare_digest(expected, actual):
-                return
+                return SERVICE_OPERATOR
 
     # Never record the credential, request body or untrusted authorization header.
     logger.warning(
