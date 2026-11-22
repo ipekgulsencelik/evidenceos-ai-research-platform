@@ -30,7 +30,12 @@ from evidenceos.application.use_cases.workspace import (
     SaveReviewCommand,
     SaveReviewRevision,
 )
-from evidenceos.domain.entities.access import Principal, ProjectAction, ProjectRole, stable_subject_key
+from evidenceos.domain.entities.access import (
+    Principal,
+    ProjectAction,
+    ProjectRole,
+    stable_subject_key,
+)
 from evidenceos.domain.entities.library import ReadingStatus
 from evidenceos.domain.entities.literature import LiteratureFacet
 from evidenceos.domain.entities.project import ResearchDomain
