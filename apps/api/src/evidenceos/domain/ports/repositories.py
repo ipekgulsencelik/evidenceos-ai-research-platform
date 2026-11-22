@@ -7,6 +7,7 @@ from uuid import UUID
 
 from evidenceos.domain.entities.project import ResearchProject
 from evidenceos.domain.ports.library import LibraryRepository
+from evidenceos.domain.ports.quality import QualityReviewRepository
 from evidenceos.domain.ports.workspace import LiteratureRepository
 
 
@@ -27,6 +28,9 @@ class UnitOfWork(Protocol):
 
     @property
     def library(self) -> LibraryRepository: ...
+
+    @property
+    def quality(self) -> QualityReviewRepository: ...
 
     async def __aenter__(self) -> "UnitOfWork": ...
 

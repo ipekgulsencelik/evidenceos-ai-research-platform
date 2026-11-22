@@ -5,8 +5,10 @@ from uuid import UUID
 
 from evidenceos.domain.entities.library import LibraryMetadata
 from evidenceos.domain.entities.project import ResearchProject
+from evidenceos.domain.entities.quality import QualityDimension, QualityReviewRevision
 from evidenceos.domain.entities.workspace import LiteratureEntry, ReviewRevision
 from evidenceos.domain.ports.library import LibraryRepository
+from evidenceos.domain.ports.quality import QualityReviewRepository
 from evidenceos.domain.ports.repositories import ProjectRepository
 from evidenceos.domain.ports.workspace import LiteratureRepository
 
@@ -64,17 +66,42 @@ class FakeLibraryRepository:
         self.data[metadata.entry_id] = metadata
 
 
+class FakeQualityRepository:
+    def __init__(self) -> None:
+        self.rows: list[QualityReviewRevision] = []
+
+    async def add(self, revision: QualityReviewRevision) -> None:
+        self.rows.append(revision)
+
+    async def latest(
+        self, entry_id: UUID, dimension: QualityDimension
+    ) -> QualityReviewRevision | None:
+        return next(
+            (
+                row
+                for row in reversed(self.rows)
+                if row.entry_id == entry_id and row.dimension is dimension
+            ),
+            None,
+        )
+
+    async def history(self, entry_id: UUID, *, limit: int = 100) -> list[QualityReviewRevision]:
+        return [row for row in reversed(self.rows) if row.entry_id == entry_id][:limit]
+
+
 class FakeUnitOfWork:
     def __init__(
         self,
         store: dict[UUID, ResearchProject],
         literature: FakeLiteratureRepository | None = None,
         library: FakeLibraryRepository | None = None,
+        quality: FakeQualityRepository | None = None,
     ) -> None:
         self._projects = FakeProjectRepository(store)
         self.committed = False
         self._literature = literature if literature is not None else FakeLiteratureRepository()
         self._library = library if library is not None else FakeLibraryRepository()
+        self._quality = quality if quality is not None else FakeQualityRepository()
 
     @property
     def projects(self) -> ProjectRepository:
@@ -87,6 +114,10 @@ class FakeUnitOfWork:
     @property
     def library(self) -> LibraryRepository:
         return self._library
+
+    @property
+    def quality(self) -> QualityReviewRepository:
+        return self._quality
 
     async def __aenter__(self) -> "FakeUnitOfWork":
         return self

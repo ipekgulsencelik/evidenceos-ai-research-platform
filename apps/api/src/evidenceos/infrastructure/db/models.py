@@ -78,3 +78,32 @@ class LibraryMetadataRow(Base):
     status: Mapped[str] = mapped_column(String(16), nullable=False)
     tags: Mapped[list[str]] = mapped_column(JSON, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+
+class QualityReviewRow(Base):
+    __tablename__ = "quality_review_revisions"
+    __table_args__ = (
+        CheckConstraint(
+            "reporting IN ('not_assessed', 'reported_in_full_text', 'unclear_after_review', "
+            "'not_reported_in_full_text', 'not_applicable')",
+            name="ck_quality_reporting",
+        ),
+        CheckConstraint(
+            "concern IN ('not_assessed', 'potential_concern', 'no_concern_identified')",
+            name="ck_quality_concern",
+        ),
+        Index("ix_quality_review_entry_dimension_created", "entry_id", "dimension", "created_at"),
+    )
+
+    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True)
+    entry_id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("literature_entries.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    dimension: Mapped[str] = mapped_column(String(32), nullable=False)
+    reporting: Mapped[str] = mapped_column(String(40), nullable=False)
+    concern: Mapped[str] = mapped_column(String(32), nullable=False)
+    checked_original: Mapped[bool] = mapped_column(nullable=False)
+    note: Mapped[str] = mapped_column(String(1000), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
