@@ -91,7 +91,7 @@ async def seed() -> tuple[
     )
     a = await SaveLiteratureAnalysis(factory).execute(first.id, profile("a"))
     b = await SaveLiteratureAnalysis(factory).execute(first.id, profile("b"))
-    other = await SaveLiteratureAnalysis(factory).execute(second.id, profile("c"))
+    await SaveLiteratureAnalysis(factory).execute(second.id, profile("c"))
     return first.id, second.id, a.id, b.id, projects, saved
 
 
