@@ -2,9 +2,11 @@
 
 from collections.abc import Iterator
 from dataclasses import replace
+from typing import cast
 from uuid import UUID
 
 import pytest
+from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
@@ -23,6 +25,7 @@ from evidenceos.domain.entities.literature import (
     FindingStatus,
     LiteratureFacet,
     LiteratureFinding,
+    LiteratureProfile,
 )
 from evidenceos.domain.entities.project import ResearchDomain, ResearchProject
 from evidenceos.domain.errors import InvalidResearchWorkspace, LiteratureEntryNotFound
@@ -35,7 +38,7 @@ from tests.fakes import FakeLibraryRepository, FakeLiteratureRepository, FakeUni
 from tests.test_workspace import example_profile
 
 
-def make_profile(sha: str, title: str, *, supported: tuple[LiteratureFacet, ...]):
+def make_profile(sha: str, title: str, *, supported: tuple[LiteratureFacet, ...]) -> LiteratureProfile:
     original = example_profile()
     findings = tuple(
         LiteratureFinding(
@@ -206,7 +209,7 @@ def test_http_library_and_gap_selection(client: TestClient) -> None:
         "/api/v1/projects", json={"title": "Project alpha", "domain": "academic"}
     ).json()["id"]
     project_id = UUID(project)
-    store = client.app.dependency_overrides[get_uow_factory]()
+    store = cast(FastAPI, client.app).dependency_overrides[get_uow_factory]()
     assert callable(store)
     # For HTTP tests create snapshots via the shared fake repository.
     # The app dependency factory is a closure over the shared fake stores.
