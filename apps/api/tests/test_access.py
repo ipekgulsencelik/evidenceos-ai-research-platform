@@ -199,7 +199,8 @@ def test_owner_manages_members_without_exposing_projects_or_transferring_ownersh
         assert promoted.json()["role"] == "editor"
         listed = client.get(root).json()
         assert {r["principal_key"]: r["role"] for r in listed} == {
-            alice.key: "owner", bob.key: "editor"
+            alice.key: "owner",
+            bob.key: "editor",
         }
         assert client.delete(f"{root}/{bob.key}").status_code == 204
         assert client.delete(f"{root}/{bob.key}").status_code == 404
@@ -211,13 +212,13 @@ def test_owner_manages_members_without_exposing_projects_or_transferring_ownersh
     assert await_membership_role(memberships, project_id, alice.key) is ProjectRole.OWNER
     assert await_membership_role(memberships, project_id, bob.key) is None
     assert any(
-        row.action == "membership.revoke" and row.outcome == "allowed"
+        row.action == "membership.revoke"
+        and row.outcome == "allowed"
         and row.actor_key == alice.key
         for row in audit.events
     )
     assert any(
-        row.action == "membership.manage" and row.outcome == "denied"
-        and row.actor_key == bob.key
+        row.action == "membership.manage" and row.outcome == "denied" and row.actor_key == bob.key
         for row in audit.events
     )
 
