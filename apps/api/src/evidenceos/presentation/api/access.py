@@ -13,6 +13,8 @@ from evidenceos.presentation.api.security import validate_service_credential
 
 
 def required_project_action(request: Request) -> ProjectAction:
+    if request.url.path.endswith("/access-audit"):
+        return ProjectAction.MANAGE_MEMBERS
     if request.method in ("GET", "HEAD"):
         return ProjectAction.READ
     if request.url.path.endswith("/reviews") or request.url.path.endswith("/quality-reviews"):
