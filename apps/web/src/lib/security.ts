@@ -7,7 +7,7 @@ export function securityEnabled(
   appEnv: string | undefined,
   securityMode: string | undefined,
 ): boolean {
-  return appEnv === "production" || securityMode === "service_token";
+  return appEnv === "production" || securityMode === "service_token" || securityMode === "oidc";
 }
 
 export function validSecurityConfiguration(
