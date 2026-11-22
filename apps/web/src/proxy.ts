@@ -40,7 +40,12 @@ export function proxy(request: NextRequest): NextResponse {
         { status: 403, headers: { "Cache-Control": "no-store" } },
       );
     }
-    return NextResponse.next();
+    const response = NextResponse.next();
+    response.headers.set("Cache-Control", "no-store");
+    response.headers.set("X-Frame-Options", "DENY");
+    response.headers.set("Referrer-Policy", "no-referrer");
+    response.headers.set("X-Content-Type-Options", "nosniff");
+    return response;
   }
 
   if (!securityEnabled(process.env.EVIDENCEOS_APP_ENV, process.env.EVIDENCEOS_SECURITY_MODE)) {
