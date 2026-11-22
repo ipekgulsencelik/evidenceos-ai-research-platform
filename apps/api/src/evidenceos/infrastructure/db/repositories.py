@@ -68,6 +68,26 @@ class SqlAlchemyProjectRepository:
             for row in result.all()
         ]
 
+    async def list_for_principal(
+        self, principal_key: str, *, limit: int = 50
+    ) -> list[ResearchProject]:
+        result = await self._session.scalars(
+            select(ProjectRow)
+            .join(ProjectMembershipRow, ProjectMembershipRow.project_id == ProjectRow.id)
+            .where(ProjectMembershipRow.principal_key == principal_key)
+            .order_by(ProjectRow.created_at.desc(), ProjectRow.id.desc())
+            .limit(limit)
+        )
+        return [
+            ResearchProject(
+                id=row.id,
+                title=row.title,
+                domain=ResearchDomain(row.domain),
+                created_at=row.created_at,
+            )
+            for row in result.all()
+        ]
+
     async def get(self, project_id: UUID) -> ResearchProject | None:
         row = await self._session.get(ProjectRow, project_id)
         if row is None:
