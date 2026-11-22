@@ -70,8 +70,14 @@ class QualityReviewRevision:
         note: str,
     ) -> "QualityReviewRevision":
         return cls(
-            uuid4(), entry_id, dimension, reporting, concern,
-            checked_original, note, datetime.now(UTC),
+            uuid4(),
+            entry_id,
+            dimension,
+            reporting,
+            concern,
+            checked_original,
+            note,
+            datetime.now(UTC),
         )
 
 

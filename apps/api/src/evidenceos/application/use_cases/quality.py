@@ -75,9 +75,7 @@ class GetQualityChecklist:
         self._uow_factory = uow_factory
 
     async def execute(self, project_id: UUID, entry_id: UUID) -> QualityChecklist:
-        entry = await GetLiteratureAnalysis(self._uow_factory).execute(
-            project_id, entry_id
-        )
+        entry = await GetLiteratureAnalysis(self._uow_factory).execute(project_id, entry_id)
         fields = {finding.facet: finding for finding in entry.profile.findings}
         indicators: list[QualityIndicator] = []
         for dimension, (prompt, facets) in _INDICATORS.items():
@@ -101,11 +99,13 @@ class GetQualityChecklist:
             )
         async with self._uow_factory() as uow:
             recent = [
-                await uow.quality.latest(entry_id, dimension)
-                for dimension in QualityDimension
+                await uow.quality.latest(entry_id, dimension) for dimension in QualityDimension
             ]
         return QualityChecklist(
-            project_id, entry_id, entry.profile.document_title, tuple(indicators),
+            project_id,
+            entry_id,
+            entry.profile.document_title,
+            tuple(indicators),
             tuple(review for review in recent if review is not None),
             _CAVEAT,
         )
@@ -125,12 +125,14 @@ class SaveQualityReview:
             )
         if len(command.note) > 1000:
             raise InvalidResearchWorkspace("Quality review note exceeds 1000 characters")
-        await GetLiteratureAnalysis(self._uow_factory).execute(
-            command.project_id, command.entry_id
-        )
+        await GetLiteratureAnalysis(self._uow_factory).execute(command.project_id, command.entry_id)
         revision = QualityReviewRevision.create(
-            command.entry_id, command.dimension, command.reporting, command.concern,
-            command.checked_original, command.note,
+            command.entry_id,
+            command.dimension,
+            command.reporting,
+            command.concern,
+            command.checked_original,
+            command.note,
         )
         async with self._uow_factory() as uow:
             await uow.quality.add(revision)
@@ -145,8 +147,6 @@ class ListQualityReviewHistory:
     async def execute(
         self, project_id: UUID, entry_id: UUID, *, limit: int = 100
     ) -> list[QualityReviewRevision]:
-        await GetLiteratureAnalysis(self._uow_factory).execute(
-            project_id, entry_id
-        )
+        await GetLiteratureAnalysis(self._uow_factory).execute(project_id, entry_id)
         async with self._uow_factory() as uow:
             return await uow.quality.history(entry_id, limit=limit)

@@ -67,7 +67,5 @@ async def quality_review_history(
     factory: Annotated[UnitOfWorkFactory, Depends(get_uow_factory)],
     limit: Annotated[int, Query(ge=1, le=100)] = 100,
 ) -> list[QualityReviewResponse]:
-    result = await ListQualityReviewHistory(factory).execute(
-        project_id, entry_id, limit=limit
-    )
+    result = await ListQualityReviewHistory(factory).execute(project_id, entry_id, limit=limit)
     return [QualityReviewResponse.from_entity(item) for item in result]
