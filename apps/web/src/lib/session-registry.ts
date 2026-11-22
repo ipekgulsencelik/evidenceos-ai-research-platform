@@ -65,7 +65,16 @@ export function sessionRegistryConfigured(): boolean {
   }
 }
 
+/** Keep retrying with a bounded delay. With disableOfflineQueue enabled,
+ * individual authorization commands fail closed while Redis is offline,
+ * but an eventually recovered service reconnects without a process restart.
+ */
+export function sessionReconnectDelay(retries: number): number {
+  return Math.min(250 * 2 ** Math.min(Math.max(retries, 0), 5), 8000);
+}
+
 let registryPromise: Promise<RedisSessionRegistry> | undefined;
+let registryClient: ReturnType<typeof createClient> | undefined;
 
 /** Reuse the connection across requests; missing/failed storage fails closed. */
 export async function getSessionRegistry(): Promise<RedisSessionRegistry> {
@@ -75,6 +84,12 @@ export async function getSessionRegistry(): Promise<RedisSessionRegistry> {
     throw new Error("Central OIDC session registry is not configured");
   }
 
+  // A socket which was explicitly/permanently closed cannot reconnect.
+  // Drop the cached instance so the next request can establish a new one.
+  if (registryClient && !registryClient.isOpen) {
+    registryPromise = undefined;
+    registryClient = undefined;
+  }
   if (!registryPromise) {
     registryPromise = (async () => {
       const client = createClient({
@@ -83,16 +98,17 @@ export async function getSessionRegistry(): Promise<RedisSessionRegistry> {
         disableOfflineQueue: true,
         socket: {
           connectTimeout: 1500,
-          reconnectStrategy: (retries: number) => retries > 2
-            ? new Error("Session store is unavailable") : Math.min(retries * 200, 1000),
+          reconnectStrategy: sessionReconnectDelay,
         },
       });
       // Redis requires an error listener; requests surface operation errors.
       client.on("error", () => {});
       await client.connect();
+      registryClient = client;
       return new RedisSessionRegistry(client);
     })().catch((cause: unknown) => {
       registryPromise = undefined;
+      registryClient = undefined;
       throw cause;
     });
   }
