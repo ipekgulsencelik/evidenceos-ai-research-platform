@@ -3,6 +3,7 @@
 import hashlib
 import hmac
 import logging
+from typing import Never
 
 from fastapi import HTTPException, Request, status
 
@@ -17,7 +18,7 @@ from evidenceos.infrastructure.oidc import (
 logger = logging.getLogger(__name__)
 
 
-def _reject(request: Request) -> None:
+def _reject(request: Request) -> Never:
     # Never record tokens, request content, unverified claims or header values.
     logger.warning(
         "security.auth_denied request_id=%s",
