@@ -20,6 +20,7 @@ from evidenceos.domain.errors import (
     InvalidDoi,
     InvalidProjectTitle,
     InvalidResearchWorkspace,
+    InvalidMembershipChange,
     InvalidSearchQuery,
     LiteratureEntryNotFound,
     ProjectNotFound,
@@ -33,7 +34,10 @@ from evidenceos.infrastructure.providers.groq_evidence import (
 from evidenceos.infrastructure.providers.pypdf_document import InvalidPdfDocument, PdfTooLarge
 from evidenceos.presentation.api.access import require_project_access
 from evidenceos.presentation.api.routes.academic import router as academic_router
-from evidenceos.presentation.api.routes.access import router as access_router
+from evidenceos.presentation.api.routes.access import (
+    identity_router,
+    router as access_router,
+)
 from evidenceos.presentation.api.routes.document import router as document_router
 from evidenceos.presentation.api.routes.evidence import router as evidence_router
 from evidenceos.presentation.api.routes.health import router as health_router
@@ -94,6 +98,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     @app.exception_handler(ProjectNotFound)
     async def handle_not_found(request: Request, exc: ProjectNotFound) -> JSONResponse:
         return JSONResponse(status_code=404, content={"detail": str(exc)})
+
+    @app.exception_handler(InvalidMembershipChange)
+    async def handle_membership_conflict(
+        request: Request, exc: InvalidMembershipChange
+    ) -> JSONResponse:
+        return JSONResponse(status_code=409, content={"detail": str(exc)})
 
     @app.exception_handler(LiteratureEntryNotFound)
     async def handle_missing_literature(
@@ -167,6 +177,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         access_router,
     ):
         app.include_router(router, prefix="/api/v1", dependencies=project_scoped)
+    app.include_router(identity_router, prefix="/api/v1", dependencies=authenticated)
     # Health probes are deliberately public for container orchestration.
     app.include_router(health_router, prefix="/api/v1")
     return app
