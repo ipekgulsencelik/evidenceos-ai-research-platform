@@ -111,3 +111,23 @@ all projects automatically to the first account.
 The web is a BFF, **not** a new identity provider. OIDC users cannot use
 the old static service token as a shortcut. Existing local and service-token
 modes continue only for the previous localhost single-operator workflow.
+
+## Browser sign-out request and CSRF protection
+
+The Sign out button submits an authenticated **same-origin fetch POST** to
+`/auth/logout`. It sends the non-CORS-safelisted
+`X-EvidenceOS-Logout: 1` header and follows the server's verified 303
+redirect to `/signin`. The server validates the exact pinned
+`EVIDENCEOS_WEB_ORIGIN` when the browser supplies `Origin`; if a browser
+omits that header, it accepts the request only with the same-origin
+`Sec-Fetch-Site` browser-generated metadata **and** the explicit custom
+header. Cross-origin, `Origin: null`, untrusted origins, and bare form
+POSTs are rejected. Plain GET navigation to `/auth/logout` is never a
+valid logout action. Do not weaken this to accept arbitrary `Referer`,
+`Host`, or `X-Forwarded-Host` values.
+
+The browser navigates to the sign-in page only after a successful POST
+redirect. An unreachable Redis session registry returns 503 and the UI
+does **not** claim that session revocation succeeded. Logout revokes
+this browser's Redis-backed session, not independently stolen raw JWTs
+or the identity provider's global SSO session.
