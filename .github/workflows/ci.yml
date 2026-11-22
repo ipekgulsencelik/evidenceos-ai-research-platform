@@ -66,6 +66,14 @@ jobs:
 
   web:
     runs-on: ubuntu-latest
+    services:
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s --health-timeout 5s --health-retries 10
     defaults:
       run:
         working-directory: apps/web
@@ -80,6 +88,10 @@ jobs:
         run: npm install --no-audit --no-fund
       - name: Check TypeScript and unit tests
         run: npm run check
+      - name: Redis session integration
+        run: npm run test:redis
+        env:
+          EVIDENCEOS_REDIS_TEST_URL: redis://127.0.0.1:6379
       - name: Build Next.js application
         run: npm run build
 
