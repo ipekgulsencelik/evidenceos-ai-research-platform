@@ -31,6 +31,7 @@ from evidenceos.infrastructure.providers.groq_evidence import (
 )
 from evidenceos.infrastructure.providers.pypdf_document import InvalidPdfDocument, PdfTooLarge
 from evidenceos.presentation.api.access import require_project_access
+from evidenceos.presentation.api.routes.access import router as access_router
 from evidenceos.presentation.api.routes.academic import router as academic_router
 from evidenceos.presentation.api.routes.document import router as document_router
 from evidenceos.presentation.api.routes.evidence import router as evidence_router
@@ -161,6 +162,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         semantic_router,
         methodology_router,
         quality_router,
+        access_router,
     ):
         app.include_router(router, prefix="/api/v1", dependencies=protected)
     app.include_router(health_router, prefix="/api/v1")
