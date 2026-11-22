@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { BookOpen, CircleAlert, FileSearch, LoaderCircle, Save } from "lucide-react";
 import { SemanticGapIntelligence } from "@/components/semantic-gap-intelligence";
+import { MethodologyIntelligence } from "@/components/methodology-intelligence";
 
 import { FACETS } from "@/lib/literature";
 import {
@@ -316,6 +317,7 @@ export function ResearchLibrary({ projectId, refreshToken }: Props) {
           </div>
         )}
       </div>
+      <MethodologyIntelligence projectId={projectId} entries={items} />
       <SemanticGapIntelligence
         projectId={projectId}
         selectedIds={selected}

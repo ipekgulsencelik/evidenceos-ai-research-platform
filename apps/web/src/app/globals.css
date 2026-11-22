@@ -286,3 +286,18 @@ a { text-underline-offset:3px; }
 .semantic-quote-grid details { background: #fff; border: 1px solid #e0ebe8; border-radius: 8px; padding: 10px; }
 .semantic-quote-grid summary { cursor: pointer; font-size: 12px; font-weight: 700; color: #196f68; }
 .semantic-quote-grid blockquote { margin: 9px 0 0; padding: 8px 10px; border-left: 3px solid #0f837b; white-space: pre-wrap; font-size: 12px; }
+
+/* On-demand methodology triage of source-quoted saved studies */
+.methodology-panel { border-top:1px solid #d9e8e5; padding-top:24px; margin-top:25px; }
+.methodology-panel > .field { width:100%; margin:9px 0 3px; }
+.methodology-panel > .primary-btn { margin:12px 0 0; }
+.methodology-report { margin-top:20px; }
+.methodology-report h5 { font-size:16px; font-weight:800; margin-bottom:8px; }
+.methodology-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:13px; margin:16px 0; }
+.methodology-item { min-width:0; border:1px solid #dbe8e5; border-radius:12px; background:#fafcfb; padding:15px; overflow-wrap:anywhere; }
+.methodology-item h6 { font-size:13px; font-weight:800; margin:0 0 8px; }
+.methodology-item p { font-size:12px; line-height:1.6; margin:7px 0; }
+.methodology-item .methodology-status { color:#157c74; font-weight:700; }
+.methodology-item details { border-top:1px solid #e1eae8; padding-top:9px; margin-top:11px; font-size:12px; }
+.methodology-item summary { cursor:pointer; color:#167b74; font-weight:700; }
+.methodology-item blockquote { white-space:pre-wrap; border-left:3px solid #0e847a; margin:9px 0; padding:10px; background:white; }
