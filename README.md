@@ -118,3 +118,13 @@ linked only to preverified quotations and page locators; unsupported facets
 are marked **not assessable**. This is not scientific quality scoring or full-paper
 review. No new database migration is required. Details:
 `docs/research-methodology-intelligence.md`.
+
+
+## Research Quality & Bias Intelligence (human-review preview)
+
+A seven-item **source coverage + manual reporting and possible-concern**
+checklist for one saved academic analysis. Reviewer judgments are explicitly
+self-attested as checked against the original full PDF, stored as append-only
+PostgreSQL revisions by Alembic 0004, and shown separately from immutable
+AI evidence. This is **not a validated risk-of-bias tool or automatic quality
+score**. See `docs/research-quality-bias-intelligence.md`.

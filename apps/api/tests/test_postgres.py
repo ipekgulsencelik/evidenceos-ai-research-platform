@@ -11,6 +11,12 @@ from evidenceos.application.use_cases.library import (
     UpdateCatalogCommand,
     UpdateLibraryMetadata,
 )
+from evidenceos.application.use_cases.quality import (
+    GetQualityChecklist,
+    ListQualityReviewHistory,
+    SaveQualityReview,
+    SaveQualityReviewCommand,
+)
 from evidenceos.application.use_cases.projects import (
     CreateProject,
     CreateProjectCommand,
@@ -26,6 +32,11 @@ from evidenceos.application.use_cases.workspace import (
 from evidenceos.domain.entities.library import ReadingStatus
 from evidenceos.domain.entities.literature import LiteratureFacet
 from evidenceos.domain.entities.project import ResearchDomain
+from evidenceos.domain.entities.quality import (
+    ConcernJudgment,
+    QualityDimension,
+    ReportingJudgment,
+)
 from evidenceos.infrastructure.db.uow import SqlAlchemyUnitOfWork
 from tests.test_workspace import example_profile
 
@@ -123,5 +134,47 @@ async def test_postgres_catalog_metadata_survives_new_session() -> None:
         assert len(loaded) == 1
         assert loaded[0].metadata.tags == ("Adolescents", "Methods")
         assert loaded[0].entry.profile.findings == entry.profile.findings
+    finally:
+        await engine.dispose()
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_postgres_quality_revision_migration_and_latest_judgments() -> None:
+    """Real migration 0004 must preserve the human quality-review history."""
+    dsn = os.getenv("EVIDENCEOS_TEST_DATABASE_URL")
+    if not dsn:
+        pytest.skip("requires an explicit disposable PostgreSQL test database")
+    engine = create_async_engine(dsn)
+    try:
+        factory = async_sessionmaker(engine, expire_on_commit=False)
+
+        def make_uow() -> SqlAlchemyUnitOfWork:
+            return SqlAlchemyUnitOfWork(factory)
+
+        project = await CreateProject(make_uow).execute(
+            CreateProjectCommand("Human quality review", ResearchDomain.ACADEMIC)
+        )
+        entry = await SaveLiteratureAnalysis(make_uow).execute(project.id, example_profile())
+        first = await SaveQualityReview(make_uow).execute(
+            SaveQualityReviewCommand(
+                project.id, entry.id, QualityDimension.DESIGN,
+                ReportingJudgment.NOT_ASSESSED, ConcernJudgment.NOT_ASSESSED,
+                False, "Before full-text review",
+            )
+        )
+        second = await SaveQualityReview(make_uow).execute(
+            SaveQualityReviewCommand(
+                project.id, entry.id, QualityDimension.DESIGN,
+                ReportingJudgment.UNCLEAR_AFTER_REVIEW,
+                ConcernJudgment.POTENTIAL_CONCERN, True, "Need verification",
+            )
+        )
+        checklist = await GetQualityChecklist(make_uow).execute(project.id, entry.id)
+        assert len(checklist.indicators) == 7
+        assert checklist.latest_reviews[0].id == second.id
+        assert checklist.latest_reviews[0].reporting is ReportingJudgment.UNCLEAR_AFTER_REVIEW
+        revisions = await ListQualityReviewHistory(make_uow).execute(project.id, entry.id)
+        assert revisions == [second, first]
     finally:
         await engine.dispose()

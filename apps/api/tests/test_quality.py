@@ -23,6 +23,7 @@ from evidenceos.domain.entities.literature import (
     FindingStatus,
     LiteratureFacet,
     LiteratureFinding,
+    LiteratureProfile,
 )
 from evidenceos.domain.entities.project import ResearchDomain, ResearchProject
 from evidenceos.domain.entities.quality import (
@@ -40,7 +41,7 @@ from tests.fakes import FakeLiteratureRepository, FakeQualityRepository, FakeUni
 from tests.test_workspace import example_profile
 
 
-def reported_profile():
+def reported_profile() -> LiteratureProfile:
     base = example_profile()
     findings = tuple(
         LiteratureFinding(
