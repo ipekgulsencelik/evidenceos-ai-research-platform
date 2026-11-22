@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { browserOidcSettings } from "@/lib/oidc-client";
+import { isAuthorizedLogoutRequest } from "@/lib/logout-request";
 import { FLOW_COOKIE, SESSION_COOKIE, cookieOptions, readSession } from "@/lib/oidc-session";
 import { getSessionRegistry } from "@/lib/session-registry";
 
@@ -10,8 +11,10 @@ export const runtime = "nodejs";
 export async function POST(request: NextRequest): Promise<NextResponse> {
   const settings = browserOidcSettings();
   if (!settings) return new NextResponse("OIDC login is not configured.", { status: 503 });
-  if (request.headers.get("origin") !== settings.origin) {
-    return new NextResponse("Forbidden", { status: 403 });
+  if (!isAuthorizedLogoutRequest(request.headers, settings.origin)) {
+    return new NextResponse("Forbidden", {
+      status: 403, headers: { "Cache-Control": "no-store" },
+    });
   }
   const session = readSession(request.cookies.get(SESSION_COOKIE)?.value);
   if (session) {
