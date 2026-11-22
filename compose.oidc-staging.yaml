@@ -30,7 +30,7 @@ services:
       retries: 15
 
   idp:
-    image: quay.io/keycloak/keycloak:26.4.7
+    image: quay.io/keycloak/keycloak:26.8.2
     command:
       - start-dev
       - --hostname=https://idp.localhost:8443
