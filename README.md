@@ -157,17 +157,15 @@ This does **not** implement OIDC, browser sessions or production-ready
 multi-user security. Review the scope, role policy and migration safety
 notes in [docs/project-rbac-audit-foundation.md](docs/project-rbac-audit-foundation.md).
 
-## OIDC resource-server verification (API-only preview)
+## OIDC resource-server verification
 
-A new optional `EVIDENCEOS_SECURITY_MODE=oidc` allows FastAPI to validate
-RS256 JWT access tokens from a configured HTTPS issuer/JWKS endpoint, check
-audience and expiry, and use the verified subject for project-scoped RBAC.
-It does **not** implement user login, browser sessions, PKCE or logout.
-
-For safety, the Next.js web application explicitly **returns 503** in this
-mode until a maintained OAuth2/OIDC browser login and session workflow is
-implemented. Continue using the existing localhost modes for the current UI.
-Never expose the prototype as a public multi-user production service.
+Optional `EVIDENCEOS_SECURITY_MODE=oidc` validates RS256 JWT access tokens
+from a configured HTTPS issuer/JWKS endpoint, checks audience and expiry,
+and uses the verified subject for project-scoped RBAC. The Next.js browser
+login is implemented separately through Authorization Code + PKCE and a
+centrally revocable Redis-backed session; it requires complete configuration.
+Never expose this prototype to public multi-user production traffic before
+real-provider validation and a dedicated security review.
 See [OIDC resource-server guide](docs/oidc-resource-server.md).
 
 ## OIDC browser login (Next.js BFF)
@@ -198,3 +196,17 @@ for users who do not own the target project, and mutations are audited.
 
 See [owner-managed project memberships](docs/owner-managed-project-memberships.md)
 for setup, permissions, identity verification and security limitations.
+
+## Real OIDC provider E2E gate
+
+The repository includes a guarded Playwright integration scenario that signs
+in two genuine staging IdP accounts and tests PKCE login, JWT identity,
+project RBAC grants and revocation, CSRF rejection, logout, and encrypted-cookie
+replay denial. Regular PR CI exercises deterministic signed JWT and browser
+boundary regressions and validates the Playwright scenario syntax, but
+**does not run against a live identity provider**.
+
+Run the protected `OIDC browser E2E (disposable staging)` GitHub Actions
+workflow only after configuring an isolated HTTPS staging deployment and two
+dedicated test identities. It creates a disposable project.
+See [real provider E2E setup](docs/oidc-real-provider-e2e.md).
