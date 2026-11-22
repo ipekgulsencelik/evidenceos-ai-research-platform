@@ -56,12 +56,13 @@ test("logout rejects forged Origin even with a custom header and fake same-origi
 
 test("logout rejects cross-origin and headerless form submissions even without a session", async () => {
   const origin = configure();
-  for (const headers of [
+  const invalidRequests: Record<string, string>[] = [
     { Origin: origin },
     { "Sec-Fetch-Site": "cross-site", [LOGOUT_REQUEST_HEADER]: "1" },
     { "Sec-Fetch-Site": "same-site", [LOGOUT_REQUEST_HEADER]: "1" },
     { [LOGOUT_REQUEST_HEADER]: "1" },
-  ]) {
+  ];
+  for (const headers of invalidRequests) {
     const forbidden = await logout(new NextRequest(origin + "/auth/logout", {
       method: "POST", headers,
     }));
