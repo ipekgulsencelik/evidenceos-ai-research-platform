@@ -49,6 +49,19 @@ class IsolatedOidcStagingTests(unittest.TestCase):
         self.assertIn("EVIDENCEOS_SECURITY_MODE: oidc", config)
         self.assertIn("EVIDENCEOS_APP_ENV: test", config)
         self.assertIn("quay.io/keycloak/keycloak:26.8.2", config)
+        # Keycloak's import checks the filename against the realm name.
+        # Retain the existing *host* source so previously generated secrets
+        # and TLS files remain valid after a simple git pull/recreate.
+        expected_import_name = generator.realm_config("s", "a", "b")["realm"] + "-realm.json"
+        self.assertIn(
+            "./staging/runtime/evidenceos-realm.json:/opt/keycloak/data/import/"
+            + expected_import_name + ":ro",
+            config,
+        )
+        self.assertNotIn(
+            "/opt/keycloak/data/import/evidenceos-realm.json:ro",
+            config,
+        )
         self.assertNotIn("postgres_data:", config.replace("staging_postgres_data:", ""))
         self.assertNotIn("0.0.0.0:", config)
 

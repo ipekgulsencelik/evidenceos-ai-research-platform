@@ -81,6 +81,24 @@ disable certificate verification.
 The ordinary EvidenceOS remains available at
 `http://127.0.0.1:3001`, with its existing data intact.
 
+### Keycloak import filename compatibility
+
+Keycloak requires the imported JSON to be mounted inside the container as
+`evidenceos-staging-realm.json` because the realm is named
+`evidenceos-staging`. The existing generated host file remains
+`staging/runtime/evidenceos-realm.json`; **do not delete or regenerate it**.
+If you created staging before this fix, pull the updated Compose file and run:
+
+```powershell
+git pull origin main
+docker compose --env-file .env.oidc-staging -f compose.oidc-staging.yaml up -d --force-recreate idp
+python scripts/check_oidc_staging.py
+```
+
+These commands recreate only the isolated staging identity-provider
+container. They do not wipe the staging database, existing local
+EvidenceOS database, or generated certificates and credentials.
+
 ## 4. Check real TLS / OIDC discovery
 
 Keycloak startup can take longer than the other containers. Inspect the
