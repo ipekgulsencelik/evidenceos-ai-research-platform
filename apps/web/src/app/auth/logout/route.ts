@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { browserOidcSettings } from "@/lib/oidc-client";
+import { isAuthorizedLogoutRequest } from "@/lib/logout-request";
 import { FLOW_COOKIE, SESSION_COOKIE, cookieOptions, readSession } from "@/lib/oidc-session";
 import { getSessionRegistry } from "@/lib/session-registry";
 
