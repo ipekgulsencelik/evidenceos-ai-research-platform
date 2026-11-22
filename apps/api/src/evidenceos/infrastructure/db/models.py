@@ -65,3 +65,17 @@ class ReviewRevisionRow(Base):
     note: Mapped[str] = mapped_column(String(1000), nullable=False)
     reviewed: Mapped[bool] = mapped_column(nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+
+
+class LibraryMetadataRow(Base):
+    __tablename__ = "literature_library_metadata"
+
+    entry_id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("literature_entries.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    status: Mapped[str] = mapped_column(String(16), nullable=False)
+    tags: Mapped[list[str]] = mapped_column(JSON, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)

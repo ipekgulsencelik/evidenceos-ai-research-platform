@@ -4,10 +4,12 @@ from types import TracebackType
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
+from evidenceos.domain.ports.library import LibraryRepository
 from evidenceos.domain.ports.repositories import ProjectRepository
 from evidenceos.domain.ports.workspace import LiteratureRepository
 from evidenceos.infrastructure.db.repositories import (
     SqlAlchemyLiteratureRepository,
+    SqlAlchemyLibraryRepository,
     SqlAlchemyProjectRepository,
 )
 
@@ -18,6 +20,7 @@ class SqlAlchemyUnitOfWork:
         self._session: AsyncSession | None = None
         self._projects: SqlAlchemyProjectRepository
         self._literature: SqlAlchemyLiteratureRepository
+        self._library: SqlAlchemyLibraryRepository
 
     @property
     def projects(self) -> ProjectRepository:
@@ -27,10 +30,15 @@ class SqlAlchemyUnitOfWork:
     def literature(self) -> LiteratureRepository:
         return self._literature
 
+    @property
+    def library(self) -> LibraryRepository:
+        return self._library
+
     async def __aenter__(self) -> "SqlAlchemyUnitOfWork":
         self._session = self._session_factory()
         self._projects = SqlAlchemyProjectRepository(self._session)
         self._literature = SqlAlchemyLiteratureRepository(self._session)
+        self._library = SqlAlchemyLibraryRepository(self._session)
         return self
 
     async def __aexit__(
