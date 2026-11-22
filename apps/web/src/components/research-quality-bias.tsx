@@ -1,14 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { ClipboardList, CircleAlert, History, Save } from "lucide-react";
 
 import {
-  defaultQualityDraft, DIMENSION_LABELS, hasUnverifiedJudgment,
+  defaultQualityDraft, DIMENSION_LABELS, hasUnverifiedJudgment, QualitySelectionGuard,
   isQualityChecklist, isQualityRevision,
 } from "@/lib/quality";
 import type {
-  QualityChecklist, QualityDimension, QualityDraft, QualityRevision,
+  QualityChecklist, QualityDimension, QualityDraft, QualityRevision, QualitySelectionToken,
 } from "@/lib/quality";
 import type { LibraryItem } from "@/lib/research-library";
 
@@ -43,6 +43,13 @@ export function ResearchQualityBias({ projectId, entries }: Props) {
   const [historyLoading, setHistoryLoading] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const selectionGuard = useRef(new QualitySelectionGuard());
+
+  // Invalidate stale asynchronous callbacks after every committed selection change.
+  // The select handler also invalidates immediately, before React commits the update.
+  useLayoutEffect(() => {
+    selectionGuard.current.invalidate();
+  }, [projectId, entryId]);
 
   useEffect(() => {
     setEntryId("");
@@ -59,6 +66,8 @@ export function ResearchQualityBias({ projectId, entries }: Props) {
     setHistory(null);
     setError(null);
     setNotice(null);
+    setSaving(null);
+    setHistoryLoading(false);
     if (!entryId) { setLoading(false); return; }
     const controller = new AbortController();
     setLoading(true);
@@ -112,6 +121,7 @@ export function ResearchQualityBias({ projectId, entries }: Props) {
       setError("Confirm review of the original PDF before giving a reporting or concern judgment.");
       return;
     }
+    const token = selectionGuard.current.capture(projectId, entryId);
     setSaving(dimension);
     setError(null);
     setNotice(null);
@@ -130,7 +140,10 @@ export function ResearchQualityBias({ projectId, entries }: Props) {
           || body.dimension !== dimension) {
         throw new Error("Unexpected quality review response.");
       }
+      if (!selectionGuard.current.isCurrent(token, projectId, entryId)) return;
       setChecklist((previous) => previous
+        && selectionGuard.current.isCurrent(token, projectId, entryId)
+        && previous.project_id === projectId && previous.entry_id === entryId
         ? {
           ...previous,
           latest_reviews: [
@@ -139,17 +152,24 @@ export function ResearchQualityBias({ projectId, entries }: Props) {
           ],
         }
         : previous);
-      setHistory((previous) => previous === null ? null : [body, ...previous]);
+      setHistory((previous) =>
+        selectionGuard.current.isCurrent(token, projectId, entryId) && previous !== null
+          ? [body, ...previous] : previous);
       setNotice(DIMENSION_LABELS[dimension] + ": review revision saved to PostgreSQL.");
     } catch (failure) {
-      setError(failure instanceof Error ? failure.message : "Unable to save review.");
+      if (selectionGuard.current.isCurrent(token, projectId, entryId)) {
+        setError(failure instanceof Error ? failure.message : "Unable to save review.");
+      }
     } finally {
-      setSaving(null);
+      if (selectionGuard.current.isCurrent(token, projectId, entryId)) {
+        setSaving(null);
+      }
     }
   }
 
   async function loadHistory() {
     if (!entryId) return;
+    const token: QualitySelectionToken = selectionGuard.current.capture(projectId, entryId);
     setHistoryLoading(true);
     setError(null);
     try {
@@ -159,14 +179,20 @@ export function ResearchQualityBias({ projectId, entries }: Props) {
       );
       const body: unknown = await response.json().catch(() => null);
       if (!response.ok) throw new Error(detail(body, "Unable to load review history."));
-      if (!Array.isArray(body) || !body.every(isQualityRevision)) {
+      if (!Array.isArray(body) || !body.every(isQualityRevision)
+          || !body.every((revision) => revision.entry_id === entryId)) {
         throw new Error("Unexpected review history response.");
       }
+      if (!selectionGuard.current.isCurrent(token, projectId, entryId)) return;
       setHistory(body);
     } catch (failure) {
-      setError(failure instanceof Error ? failure.message : "Unable to load history.");
+      if (selectionGuard.current.isCurrent(token, projectId, entryId)) {
+        setError(failure instanceof Error ? failure.message : "Unable to load history.");
+      }
     } finally {
-      setHistoryLoading(false);
+      if (selectionGuard.current.isCurrent(token, projectId, entryId)) {
+        setHistoryLoading(false);
+      }
     }
   }
 
@@ -193,7 +219,12 @@ export function ResearchQualityBias({ projectId, entries }: Props) {
         Saved study to assess
       </label>
       <select id="quality-study-select" className="field"
-        value={entryId} onChange={(e) => setEntryId(e.target.value)}>
+        value={entryId} onChange={(e) => {
+          selectionGuard.current.invalidate();
+          setEntryId(e.target.value);
+          setSaving(null);
+          setHistoryLoading(false);
+        }}>
         <option value="">Choose a saved analysis…</option>
         {entries.map((item) => (
           <option key={item.entry.id} value={item.entry.id}>
@@ -204,7 +235,7 @@ export function ResearchQualityBias({ projectId, entries }: Props) {
       {loading && <p role="status" className="panel-subtitle">Loading checklist and latest reviews…</p>}
       {notice && <p role="status" className="quality-notice">{notice}</p>}
       {error && <p role="alert" className="alert"><CircleAlert size={15} /> {error}</p>}
-      {checklist && (
+      {checklist && checklist.project_id === projectId && checklist.entry_id === entryId && (
         <div className="quality-content">
           <p className="review-caveat">{checklist.caveat}</p>
           <div className="quality-grid">
