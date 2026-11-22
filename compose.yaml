@@ -24,9 +24,9 @@ services:
     command:
       - sh
       - -c
-      - exec redis-server --save "" --appendonly no --requirepass "$REDIS_PASSWORD"
+      - exec redis-server --save "" --appendonly no --requirepass "$$REDIS_PASSWORD"
     healthcheck:
-      test: ["CMD-SHELL", "REDISCLI_AUTH=\"$REDIS_PASSWORD\" redis-cli ping | grep -q PONG"]
+      test: ["CMD-SHELL", "REDISCLI_AUTH=\"$$REDIS_PASSWORD\" redis-cli ping | grep -q PONG"]
       interval: 5s
       timeout: 5s
       retries: 12
