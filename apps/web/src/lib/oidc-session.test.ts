@@ -12,6 +12,8 @@ function configure(): void {
   process.env.EVIDENCEOS_SECURITY_MODE = "oidc";
   process.env.EVIDENCEOS_APP_ENV = "test";
   process.env.EVIDENCEOS_WEB_SESSION_KEY = randomBytes(32).toString("base64url");
+  process.env.EVIDENCEOS_SESSION_REDIS_URL = "redis://127.0.0.1:6379";
+  process.env.EVIDENCEOS_SESSION_REDIS_PASSWORD = "test-only-session-registry-password-012345678901";
   process.env.EVIDENCEOS_OIDC_ISSUER = "https://idp.example/tenant";
   process.env.EVIDENCEOS_OIDC_AUDIENCE = "evidenceos-api";
   process.env.EVIDENCEOS_OIDC_WEB_CLIENT_ID = "web-client";
@@ -43,12 +45,15 @@ test("OIDC configuration requires strong secrets, issuer HTTPS, and pinned origi
 
   process.env.EVIDENCEOS_WEB_SESSION_KEY = "bad";
   assert.equal(browserOidcSettings(), null);
+  process.env.EVIDENCEOS_WEB_SESSION_KEY = randomBytes(32).toString("base64url");
+  process.env.EVIDENCEOS_SESSION_REDIS_PASSWORD = "weak";
+  assert.equal(browserOidcSettings(), null);
 });
 
 test("AEAD browser session is encrypted and bound to cookie purpose", () => {
   configure();
   assert.equal(sessionKeyConfigured(), true);
-  const session = { accessToken: "non-public-token-123", expiresAt: Math.floor(Date.now()/1000)+120 };
+  const session = { sid: randomBytes(32).toString("base64url"), accessToken: "non-public-token-123", expiresAt: Math.floor(Date.now()/1000)+120 };
   const sealed = sealCookie(SESSION_COOKIE, session);
   assert.ok(!sealed.includes(session.accessToken));
   assert.deepEqual(readSession(sealed), session);
@@ -69,9 +74,9 @@ test("AEAD browser session is encrypted and bound to cookie purpose", () => {
 test("short-lived cookies reject expired payload and fail closed without key", () => {
   configure();
   assert.throws(() => sealCookie(SESSION_COOKIE, {
-    accessToken: "abc", expiresAt: Math.floor(Date.now()/1000)-1,
+    sid: randomBytes(32).toString("base64url"), accessToken: "abc", expiresAt: Math.floor(Date.now()/1000)-1,
   }));
-  const expired = { accessToken: "expired", expiresAt: Math.floor(Date.now()/1000)+1 };
+  const expired = { sid: randomBytes(32).toString("base64url"), accessToken: "expired", expiresAt: Math.floor(Date.now()/1000)+1 };
   const sealed = sealCookie(SESSION_COOKIE, expired);
   // Verify time expiry without sleeps by re-encrypting with no valid TTL.
   assert.equal(typeof readSession(sealed)?.accessToken, "string");
