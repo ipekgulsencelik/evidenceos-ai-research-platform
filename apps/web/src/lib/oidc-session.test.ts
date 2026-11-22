@@ -33,6 +33,10 @@ test("OIDC configuration requires strong secrets, issuer HTTPS, and pinned origi
   assert.equal(browserOidcSettings(), null);
   process.env.EVIDENCEOS_OIDC_ISSUER = "https://idp.example/tenant";
 
+  process.env.EVIDENCEOS_OIDC_AUDIENCE = "web-client";
+  assert.equal(browserOidcSettings(), null);
+  process.env.EVIDENCEOS_OIDC_AUDIENCE = "evidenceos-api";
+
   process.env.EVIDENCEOS_OIDC_WEB_CLIENT_SECRET = "short";
   assert.equal(browserOidcSettings(), null);
   process.env.EVIDENCEOS_OIDC_WEB_CLIENT_SECRET = "very-strong-provider-client-secret";
