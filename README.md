@@ -108,3 +108,13 @@ See docs/research-library-gap-analysis.md for scope and privacy limits.
 ## Semantic Research Gap Intelligence (preview)
 
 Optional consent-gated Groq comparison of populations, study designs, scales and findings from saved source quotations in **2–10 different PDFs**. Every source reference is checked on the backend and tentative findings are labeled for manual review. No claims of proven scientific novelty. No PDF binaries are sent. See `docs/semantic-research-gap-intelligence.md`.
+
+
+## Research Methodology Intelligence — source-limited preview
+
+Choose a saved academic literature record and, with separate consent, request a
+Groq-assisted review of seven methodology reporting dimensions. Model notes are
+linked only to preverified quotations and page locators; unsupported facets
+are marked **not assessable**. This is not scientific quality scoring or full-paper
+review. No new database migration is required. Details:
+`docs/research-methodology-intelligence.md`.

@@ -36,6 +36,7 @@ from evidenceos.presentation.api.routes.evidence import router as evidence_route
 from evidenceos.presentation.api.routes.health import router as health_router
 from evidenceos.presentation.api.routes.library import router as library_router
 from evidenceos.presentation.api.routes.literature import router as literature_router
+from evidenceos.presentation.api.routes.methodology import router as methodology_router
 from evidenceos.presentation.api.routes.projects import router as projects_router
 from evidenceos.presentation.api.routes.semantic import router as semantic_router
 from evidenceos.presentation.api.routes.workspace import router as workspace_router
@@ -152,6 +153,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(workspace_router, prefix="/api/v1")
     app.include_router(library_router, prefix="/api/v1")
     app.include_router(semantic_router, prefix="/api/v1")
+    app.include_router(methodology_router, prefix="/api/v1")
     return app
 
 
