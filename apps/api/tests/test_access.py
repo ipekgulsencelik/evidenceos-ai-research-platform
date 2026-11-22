@@ -173,7 +173,8 @@ def test_owner_manages_members_without_exposing_projects_or_transferring_ownersh
         actor["current"] = alice
         assert client.put(f"{root}/invalid-key", json={"role": "viewer"}).status_code == 422
         assert client.put(f"{root}/{bob.key}", json={"role": "admin"}).status_code == 422
-        assert client.put(f"{root}/{bob.key}", json={"role": "viewer", "extra": 1}).status_code == 422
+        invalid_extra = client.put(f"{root}/{bob.key}", json={"role": "viewer", "extra": 1})
+        assert invalid_extra.status_code == 422
         assert client.put(f"{root}/{charlie.key}", json={"role": "owner"}).status_code == 409
         assert client.put(f"{root}/{alice.key}", json={"role": "viewer"}).status_code == 409
         assert client.delete(f"{root}/{alice.key}").status_code == 409
