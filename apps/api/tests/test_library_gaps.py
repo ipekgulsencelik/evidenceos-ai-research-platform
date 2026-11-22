@@ -38,7 +38,9 @@ from tests.fakes import FakeLibraryRepository, FakeLiteratureRepository, FakeUni
 from tests.test_workspace import example_profile
 
 
-def make_profile(sha: str, title: str, *, supported: tuple[LiteratureFacet, ...]) -> LiteratureProfile:
+def make_profile(
+    sha: str, title: str, *, supported: tuple[LiteratureFacet, ...]
+) -> LiteratureProfile:
     original = example_profile()
     findings = tuple(
         LiteratureFinding(
