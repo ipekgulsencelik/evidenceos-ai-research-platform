@@ -3,7 +3,7 @@
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Request, status
 
 from evidenceos.application.use_cases.projects import (
     CreateProject,
@@ -11,9 +11,11 @@ from evidenceos.application.use_cases.projects import (
     GetProject,
 )
 from evidenceos.application.use_cases.workspace import ListResearchProjects
+from evidenceos.domain.entities.access import Principal
 from evidenceos.domain.ports.repositories import UnitOfWorkFactory
 from evidenceos.presentation.api.dependencies import get_uow_factory
 from evidenceos.presentation.api.schemas import CreateProjectRequest, ProjectResponse
+from evidenceos.presentation.api.security import validate_service_credential
 
 router = APIRouter(prefix="/projects", tags=["projects"])
 
@@ -21,10 +23,13 @@ router = APIRouter(prefix="/projects", tags=["projects"])
 @router.post("", status_code=status.HTTP_201_CREATED, response_model=ProjectResponse)
 async def create_project(
     payload: CreateProjectRequest,
+    request: Request,
     uow_factory: Annotated[UnitOfWorkFactory, Depends(get_uow_factory)],
+    actor: Annotated[Principal, Depends(validate_service_credential)],
 ) -> ProjectResponse:
     project = await CreateProject(uow_factory).execute(
-        CreateProjectCommand(title=payload.title, domain=payload.domain)
+        CreateProjectCommand(title=payload.title, domain=payload.domain),
+        actor=actor, request_id=getattr(request.state, "request_id", ""),
     )
     return ProjectResponse.from_entity(project)
 
@@ -41,6 +46,7 @@ async def get_project(
 @router.get("", response_model=list[ProjectResponse])
 async def list_projects(
     uow_factory: Annotated[UnitOfWorkFactory, Depends(get_uow_factory)],
+    actor: Annotated[Principal, Depends(validate_service_credential)],
 ) -> list[ProjectResponse]:
-    projects = await ListResearchProjects(uow_factory).execute()
+    projects = await ListResearchProjects(uow_factory).execute(actor=actor)
     return [ProjectResponse.from_entity(project) for project in projects]
