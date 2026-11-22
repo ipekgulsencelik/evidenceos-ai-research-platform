@@ -6,6 +6,7 @@ from uuid import UUID
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from evidenceos.domain.entities.library import LibraryMetadata, ReadingStatus
 from evidenceos.domain.entities.literature import (
     FindingStatus,
     LiteratureFacet,
@@ -16,6 +17,7 @@ from evidenceos.domain.entities.literature import (
 from evidenceos.domain.entities.project import ResearchDomain, ResearchProject
 from evidenceos.domain.entities.workspace import LiteratureEntry, ReviewRevision
 from evidenceos.infrastructure.db.models import (
+    LibraryMetadataRow,
     LiteratureEntryRow,
     ProjectRow,
     ReviewRevisionRow,
@@ -163,3 +165,32 @@ class SqlAlchemyLiteratureRepository:
             )
             for row in result.all()
         ]
+
+
+class SqlAlchemyLibraryRepository:
+    def __init__(self, session: AsyncSession) -> None:
+        self._session = session
+
+    async def get(self, entry_id: UUID) -> LibraryMetadata | None:
+        row = await self._session.get(LibraryMetadataRow, entry_id)
+        if row is None:
+            return None
+        return LibraryMetadata(
+            row.entry_id, ReadingStatus(row.status), tuple(row.tags), row.updated_at
+        )
+
+    async def upsert(self, metadata: LibraryMetadata) -> None:
+        row = await self._session.get(LibraryMetadataRow, metadata.entry_id)
+        if row is None:
+            self._session.add(
+                LibraryMetadataRow(
+                    entry_id=metadata.entry_id,
+                    status=metadata.status.value,
+                    tags=list(metadata.tags),
+                    updated_at=metadata.updated_at,
+                )
+            )
+        else:
+            row.status = metadata.status.value
+            row.tags = list(metadata.tags)
+            row.updated_at = metadata.updated_at

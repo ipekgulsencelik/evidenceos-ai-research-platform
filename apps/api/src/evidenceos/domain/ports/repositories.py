@@ -6,6 +6,7 @@ from typing import Protocol
 from uuid import UUID
 
 from evidenceos.domain.entities.project import ResearchProject
+from evidenceos.domain.ports.library import LibraryRepository
 from evidenceos.domain.ports.workspace import LiteratureRepository
 
 
@@ -23,6 +24,9 @@ class UnitOfWork(Protocol):
 
     @property
     def literature(self) -> LiteratureRepository: ...
+
+    @property
+    def library(self) -> LibraryRepository: ...
 
     async def __aenter__(self) -> "UnitOfWork": ...
 

@@ -3,8 +3,10 @@
 from types import TracebackType
 from uuid import UUID
 
+from evidenceos.domain.entities.library import LibraryMetadata
 from evidenceos.domain.entities.project import ResearchProject
 from evidenceos.domain.entities.workspace import LiteratureEntry, ReviewRevision
+from evidenceos.domain.ports.library import LibraryRepository
 from evidenceos.domain.ports.repositories import ProjectRepository
 from evidenceos.domain.ports.workspace import LiteratureRepository
 
@@ -51,15 +53,28 @@ class FakeLiteratureRepository:
         ]
 
 
+class FakeLibraryRepository:
+    def __init__(self) -> None:
+        self.data: dict[UUID, LibraryMetadata] = {}
+
+    async def get(self, entry_id: UUID) -> LibraryMetadata | None:
+        return self.data.get(entry_id)
+
+    async def upsert(self, metadata: LibraryMetadata) -> None:
+        self.data[metadata.entry_id] = metadata
+
+
 class FakeUnitOfWork:
     def __init__(
         self,
         store: dict[UUID, ResearchProject],
         literature: FakeLiteratureRepository | None = None,
+        library: FakeLibraryRepository | None = None,
     ) -> None:
         self._projects = FakeProjectRepository(store)
         self.committed = False
         self._literature = literature if literature is not None else FakeLiteratureRepository()
+        self._library = library if library is not None else FakeLibraryRepository()
 
     @property
     def projects(self) -> ProjectRepository:
@@ -68,6 +83,10 @@ class FakeUnitOfWork:
     @property
     def literature(self) -> LiteratureRepository:
         return self._literature
+
+    @property
+    def library(self) -> LibraryRepository:
+        return self._library
 
     async def __aenter__(self) -> "FakeUnitOfWork":
         return self

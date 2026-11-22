@@ -34,6 +34,7 @@ from evidenceos.presentation.api.routes.academic import router as academic_route
 from evidenceos.presentation.api.routes.document import router as document_router
 from evidenceos.presentation.api.routes.evidence import router as evidence_router
 from evidenceos.presentation.api.routes.health import router as health_router
+from evidenceos.presentation.api.routes.library import router as library_router
 from evidenceos.presentation.api.routes.literature import router as literature_router
 from evidenceos.presentation.api.routes.projects import router as projects_router
 from evidenceos.presentation.api.routes.workspace import router as workspace_router
@@ -77,7 +78,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             CORSMiddleware,
             allow_origins=config.cors_origins,
             allow_credentials=False,
-            allow_methods=["GET", "POST"],
+            allow_methods=["GET", "POST", "PUT"],
             allow_headers=["Content-Type", "Authorization"],
         )
 
@@ -148,6 +149,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(health_router, prefix="/api/v1")
     app.include_router(projects_router, prefix="/api/v1")
     app.include_router(workspace_router, prefix="/api/v1")
+    app.include_router(library_router, prefix="/api/v1")
     return app
 
 
