@@ -53,7 +53,6 @@ class FakeLiteratureRepository:
         ]
 
 
-
 class FakeLibraryRepository:
     def __init__(self) -> None:
         self.data: dict[UUID, LibraryMetadata] = {}

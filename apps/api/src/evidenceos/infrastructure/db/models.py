@@ -67,7 +67,6 @@ class ReviewRevisionRow(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
 
-
 class LibraryMetadataRow(Base):
     __tablename__ = "literature_library_metadata"
 

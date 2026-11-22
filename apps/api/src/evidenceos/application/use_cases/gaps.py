@@ -16,9 +16,7 @@ class CompareEvidenceCoverage:
     def __init__(self, uow_factory: UnitOfWorkFactory) -> None:
         self._uow_factory = uow_factory
 
-    async def execute(
-        self, project_id: UUID, entry_ids: tuple[UUID, ...]
-    ) -> GapComparison:
+    async def execute(self, project_id: UUID, entry_ids: tuple[UUID, ...]) -> GapComparison:
         if not 2 <= len(entry_ids) <= 10 or len(set(entry_ids)) != len(entry_ids):
             raise InvalidResearchWorkspace("Select 2–10 distinct saved analyses")
         from evidenceos.application.use_cases.workspace import _require_project

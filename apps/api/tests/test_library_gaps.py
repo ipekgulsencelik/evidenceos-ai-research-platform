@@ -40,9 +40,7 @@ def make_profile(sha: str, title: str, *, supported: tuple[LiteratureFacet, ...]
     findings = tuple(
         LiteratureFinding(
             facet=facet,
-            status=(
-                FindingStatus.GROUNDED if facet in supported else FindingStatus.NOT_IDENTIFIED
-            ),
+            status=(FindingStatus.GROUNDED if facet in supported else FindingStatus.NOT_IDENTIFIED),
             value="Explicitly described." if facet in supported else None,
             quote="An exact source excerpt." if facet in supported else None,
             locator="PDF page 1" if facet in supported else None,
@@ -147,12 +145,8 @@ async def test_gap_scope_and_input_constraints() -> None:
     b = await CreateProject(make_uow).execute(
         CreateProjectCommand("Academic B", ResearchDomain.ACADEMIC)
     )
-    one = await SaveLiteratureAnalysis(make_uow).execute(
-        a.id, make_profile("a", "A", supported=())
-    )
-    two = await SaveLiteratureAnalysis(make_uow).execute(
-        b.id, make_profile("b", "B", supported=())
-    )
+    one = await SaveLiteratureAnalysis(make_uow).execute(a.id, make_profile("a", "A", supported=()))
+    two = await SaveLiteratureAnalysis(make_uow).execute(b.id, make_profile("b", "B", supported=()))
     with pytest.raises(InvalidResearchWorkspace):
         await CompareEvidenceCoverage(make_uow).execute(a.id, (one.id, one.id))
     with pytest.raises(LiteratureEntryNotFound):
@@ -245,7 +239,10 @@ def test_http_library_and_gap_selection(client: TestClient) -> None:
     )
     assert gap.status_code == 200, gap.text
     assert gap.json()["candidates"]
-    assert client.post(
-        f"/api/v1/projects/{project}/research-gaps",
-        json={"entry_ids": [str(first), str(first)]},
-    ).status_code == 422
+    assert (
+        client.post(
+            f"/api/v1/projects/{project}/research-gaps",
+            json={"entry_ids": [str(first), str(first)]},
+        ).status_code
+        == 422
+    )

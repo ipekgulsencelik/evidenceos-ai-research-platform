@@ -50,9 +50,7 @@ class UpdateLibraryMetadata:
     async def execute(self, command: UpdateCatalogCommand) -> LibraryMetadata:
         tags = validate_tags(command.tags)
         # Enforce project scope before writing. Never alter the model's findings.
-        await GetLiteratureAnalysis(self._uow_factory).execute(
-            command.project_id, command.entry_id
-        )
+        await GetLiteratureAnalysis(self._uow_factory).execute(command.project_id, command.entry_id)
         metadata = LibraryMetadata.create(command.entry_id, command.status, tags)
         async with self._uow_factory() as uow:
             await uow.library.upsert(metadata)
@@ -76,16 +74,12 @@ class ListLibraryItems:
         if len(query) > 120 or len(tag) > 32:
             raise InvalidResearchWorkspace("Library filter is too long")
         # Bound this first-release local catalog to the newest 100 snapshots.
-        entries = await ListLiteratureAnalyses(self._uow_factory).execute(
-            project_id, limit=100
-        )
+        entries = await ListLiteratureAnalyses(self._uow_factory).execute(project_id, limit=100)
         items: list[LibraryItem] = []
         async with self._uow_factory() as uow:
             for entry in entries:
                 stored = await uow.library.get(entry.id)
-                metadata = stored or LibraryMetadata.create(
-                    entry.id, ReadingStatus.TO_READ, ()
-                )
+                metadata = stored or LibraryMetadata.create(entry.id, ReadingStatus.TO_READ, ())
                 if query and query.casefold() not in entry.profile.document_title.casefold():
                     continue
                 if status is not None and metadata.status is not status:
