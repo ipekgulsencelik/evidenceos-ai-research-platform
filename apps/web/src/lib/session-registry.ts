@@ -57,7 +57,7 @@ export function sessionRegistryConfigured(): boolean {
     const parsed = new URL(url);
     return ["redis:", "rediss:"].includes(parsed.protocol) &&
       Boolean(parsed.hostname) && !parsed.username && !parsed.password &&
-      !parsed.search && !parsed.hash && parsed.pathname === "/" &&
+      !parsed.search && !parsed.hash && ["", "/"].includes(parsed.pathname) &&
       url.length <= 2048 &&
       !(process.env.EVIDENCEOS_APP_ENV === "production" && parsed.protocol !== "rediss:");
   } catch {
