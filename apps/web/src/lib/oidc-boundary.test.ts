@@ -36,6 +36,8 @@ test("anonymous OIDC browser navigation redirects, but APIs return 401", async (
 
   const free = await proxy(new NextRequest(origin + "/signin"));
   assert.equal(free.status, 200);
+  const signedOut = await proxy(new NextRequest(origin + "/signed-out"));
+  assert.equal(signedOut.status, 200);
 });
 
 test("logout rejects forged Origin even with a custom header and fake same-origin metadata", async () => {
