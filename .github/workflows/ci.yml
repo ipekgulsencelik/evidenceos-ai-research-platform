@@ -144,5 +144,13 @@ jobs:
           python -m unittest discover -s scripts -p 'test_https_ingress_reference.py' -v
       - name: Build API image
         run: docker build -t evidenceos-api:ci apps/api
+      - name: Verify synthetic encrypted backup and separate PostgreSQL restore
+        run: |
+          bash -n scripts/drill_disposable_postgres_backup.sh
+          if GITHUB_ACTIONS=false EVIDENCEOS_DRILL_CONFIRM=isolated-synthetic-only bash scripts/drill_disposable_postgres_backup.sh; then
+            echo "Recovery drill must refuse execution outside confirmed CI" >&2
+            exit 1
+          fi
+          EVIDENCEOS_DRILL_CONFIRM=isolated-synthetic-only bash scripts/drill_disposable_postgres_backup.sh
       - name: Build Web image
         run: docker build -t evidenceos-web:ci apps/web
