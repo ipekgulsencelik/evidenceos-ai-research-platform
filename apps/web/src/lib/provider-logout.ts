@@ -31,10 +31,18 @@ export function providerLogoutUrl(
 
   // Standard OIDC RP-Initiated Logout with client_id. Keycloak may request
   // explicit confirmation without id_token_hint; no ID token is exposed to JS.
-  const url = oidc.buildEndSessionUrl(configuration);
+  // The return page is fixed in server settings, never read from a request.
+  // Keycloak must separately register this exact logout return URI.
+  const postLogoutRedirect = settings.origin + "/signed-out";
+  const url = oidc.buildEndSessionUrl(configuration, {
+    post_logout_redirect_uri: postLogoutRedirect,
+  });
   if (url.protocol !== "https:" || url.origin !== endpoint.origin ||
       url.pathname !== endpoint.pathname || url.username || url.password ||
       url.hash || url.searchParams.getAll("client_id").length !== 1 ||
-      url.searchParams.get("client_id") !== settings.clientId) return null;
+      url.searchParams.get("client_id") !== settings.clientId ||
+      url.searchParams.getAll("post_logout_redirect_uri").length !== 1 ||
+      url.searchParams.get("post_logout_redirect_uri") !== postLogoutRedirect ||
+      url.searchParams.has("id_token_hint")) return null;
   return url.toString();
 }
