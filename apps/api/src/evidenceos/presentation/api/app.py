@@ -27,13 +27,14 @@ from evidenceos.domain.errors import (
 )
 from evidenceos.infrastructure.config import Settings, get_settings
 from evidenceos.infrastructure.oidc import OidcAccessTokenVerifier
-from evidenceos.infrastructure.redis_rate_limits import RedisApiRateLimiter
 from evidenceos.infrastructure.providers.groq_evidence import (
     EvidenceProviderFailure,
     EvidenceProviderUnavailable,
 )
 from evidenceos.infrastructure.providers.pypdf_document import InvalidPdfDocument, PdfTooLarge
+from evidenceos.infrastructure.redis_rate_limits import RedisApiRateLimiter
 from evidenceos.presentation.api.access import require_project_access
+from evidenceos.presentation.api.rate_limits import enforce_research_rate_limit
 from evidenceos.presentation.api.routes.academic import router as academic_router
 from evidenceos.presentation.api.routes.access import identity_router
 from evidenceos.presentation.api.routes.access import router as access_router
@@ -47,7 +48,6 @@ from evidenceos.presentation.api.routes.projects import router as projects_route
 from evidenceos.presentation.api.routes.quality import router as quality_router
 from evidenceos.presentation.api.routes.semantic import router as semantic_router
 from evidenceos.presentation.api.routes.workspace import router as workspace_router
-from evidenceos.presentation.api.rate_limits import enforce_research_rate_limit
 
 
 class RequestIdMiddleware(BaseHTTPMiddleware):
