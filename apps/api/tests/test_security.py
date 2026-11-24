@@ -8,6 +8,7 @@ from fastapi.testclient import TestClient
 from pydantic import ValidationError
 
 from evidenceos.domain.entities.project import ResearchProject
+from evidenceos.domain.ports.rate_limits import RateLimitDecision
 from evidenceos.infrastructure.config import Settings
 from evidenceos.presentation.api.app import create_app
 from evidenceos.presentation.api.dependencies import get_uow_factory
@@ -17,14 +18,34 @@ DATABASE = "postgresql+asyncpg://u:p@localhost:5432/test"
 TOKEN = "security-test-token-with-adequate-entropy-0123456789"
 
 
+class PermitAllRateLimits:
+    async def consume(
+        self,
+        principal_key: str,
+        *,
+        maximum: int,
+        expensive_maximum: int,
+        expensive: bool,
+    ) -> RateLimitDecision:
+        return RateLimitDecision(allowed=True)
+
+    async def aclose(self) -> None:
+        return None
+
+
 def secured_client(*, environment: str = "test") -> TestClient:
     settings = Settings(
         app_env=environment,
         database_url=DATABASE,
         security_mode="service_token",
         api_service_token=TOKEN,
+        rate_limit_enabled=environment == "production",
+        rate_limit_redis_url="rediss://redis.test:6379",
+        rate_limit_redis_password="isolated-test-redis-password-123456789012345",
     )
     app = create_app(settings)
+    if environment == "production":
+        app.state.rate_limiter = PermitAllRateLimits()
     store: dict[UUID, ResearchProject] = {}
     app.dependency_overrides[get_uow_factory] = lambda: lambda: FakeUnitOfWork(store)
     return TestClient(app)

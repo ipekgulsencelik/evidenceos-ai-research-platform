@@ -111,7 +111,12 @@ def test_oidc_configuration_rejects_missing_or_unsafe_trust_anchors(
 
 
 def test_oidc_mode_allows_pinned_production_configuration() -> None:
-    config = oidc_settings(app_env="production")
+    config = oidc_settings(
+        app_env="production",
+        rate_limit_enabled="true",
+        rate_limit_redis_url="rediss://redis.test:6379",
+        rate_limit_redis_password="separate-test-redis-password-1234567890",
+    )
     assert config.security_mode == "oidc"
 
 
