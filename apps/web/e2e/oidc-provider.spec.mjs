@@ -81,11 +81,13 @@ async function logOutAtProvider(page, context) {
     if (await confirm.isVisible({ timeout: 2500 }).catch(() => false)) {
       await confirm.click();
     }
-    const backLink = page.getByRole("link", {
+    const back = page.getByRole("link", {
       name: /back to application|return to application|continue|back to evidenceos/i,
-    });
-    if (await backLink.isVisible({ timeout: 2500 }).catch(() => false)) {
-      await backLink.click();
+    }).or(page.getByRole("button", {
+      name: /back to application|return to application|continue|back to evidenceos/i,
+    })).first();
+    if (await back.isVisible({ timeout: 2500 }).catch(() => false)) {
+      await back.click();
     }
   }
 
@@ -95,10 +97,8 @@ async function logOutAtProvider(page, context) {
   await expect(page.getByRole("heading", { name: "You are logged out" })).toBeVisible();
   await expect(page.getByRole("link", { name: "Sign in again" })).toBeVisible();
 
-  // Sign-in is user-controlled: the return page cannot begin login itself.
+  // Sign-in is user-controlled: this one click starts a new OIDC login.
   await page.getByRole("link", { name: "Sign in again" }).click();
-  await page.waitForURL((url) => url.origin === origin && url.pathname === "/signin");
-  await page.getByRole("link", { name: "Sign in securely" }).click();
   await expect(page.locator('input[name="username"]')).toBeVisible({ timeout: 45000 });
 }
 
