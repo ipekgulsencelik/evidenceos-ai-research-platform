@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { isAssignableRole, isMemberKey } from "@/lib/memberships";
-import { callBackend } from "@/lib/server-proxy";
+import { callBackend, gatewayResponseHeaders } from "@/lib/server-proxy";
 import { isUuid } from "@/lib/workspace";
 
 interface Context { params: Promise<{ projectId: string; memberKey: string }> }
@@ -30,7 +30,7 @@ export async function PUT(request: NextRequest, context: Context): Promise<NextR
     body: JSON.stringify({ role }),
   });
   return NextResponse.json(result.body, {
-    status: result.status, headers: { "Cache-Control": "no-store" },
+    status: result.status, headers: gatewayResponseHeaders(result),
   });
 }
 
@@ -43,6 +43,6 @@ export async function DELETE(_request: NextRequest, context: Context): Promise<N
   // invalid content. The bridge should preserve a successful empty response.
   if (result.status === 204) return new NextResponse(null, { status: 204 });
   return NextResponse.json(result.body, {
-    status: result.status, headers: { "Cache-Control": "no-store" },
+    status: result.status, headers: gatewayResponseHeaders(result),
   });
 }
