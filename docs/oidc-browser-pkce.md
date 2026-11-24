@@ -146,8 +146,8 @@ ID token hint, access token, or client secret is placed in the navigation URL.
 Keycloak 26 may show a logout-confirmation page and a return-to-application
 link depending on the client's confirmation settings; do not bypass this.
 Upon returning to `/signed-out`, EvidenceOS shows **You are logged out**
-and an explicit **Sign in again** link; it never starts a new login without
-user action.
+and an explicit **Sign in again** link to `/auth/login`; it never starts a
+new login without the user clicking that link.
 
 For a previously provisioned local test realm, run
 `python scripts/configure_oidc_staging_logout.py` once after updating
