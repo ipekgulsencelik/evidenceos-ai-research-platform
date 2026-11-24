@@ -149,6 +149,13 @@ jobs:
             echo "Intentionally incomplete backup policy template was accepted" >&2
             exit 1
           fi
+      - name: Validate offline backup freshness, WAL and restore observations
+        run: |
+          python -m unittest discover -s scripts -p 'test_backup_recovery_evidence.py' -v
+          if python scripts/backup_recovery_evidence.py deploy/backup/recovery-policy.example.json deploy/backup/recovery-evidence.example.json; then
+            echo "Untrusted and incomplete example observations were accepted" >&2
+            exit 1
+          fi
       - name: Build API image
         run: docker build -t evidenceos-api:ci apps/api
       - name: Verify synthetic encrypted backup and separate PostgreSQL restore

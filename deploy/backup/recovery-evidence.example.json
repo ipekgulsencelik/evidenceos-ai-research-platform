@@ -1,0 +1,28 @@
+{
+  "_warning": "NON-DEPLOYABLE, UNSIGNED EXAMPLE. Do not use to assert a real backup exists.",
+  "schema_version": 1,
+  "environment": "staging",
+  "observed_at": null,
+  "backup": {
+    "snapshot_at": null,
+    "completed_at": null,
+    "offsite_verified_at": null,
+    "encryption_verified": false,
+    "immutability_verified": false,
+    "integrity_verified": false
+  },
+  "wal": {
+    "last_contiguous_at": null,
+    "continuity_verified": false
+  },
+  "restore": {
+    "started_at": null,
+    "completed_at": null,
+    "separate_target_verified": false,
+    "integrity_verified": false,
+    "schema_verified": false,
+    "rbac_verified": false,
+    "audit_verified": false,
+    "application_smoke_verified": false
+  }
+}
