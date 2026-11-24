@@ -42,7 +42,10 @@ test("openid-client builds the standard client-id bound logout URL", () => {
   assert.equal(url.pathname, "/realms/evidenceos-staging/protocol/openid-connect/logout");
   assert.equal(url.searchParams.get("client_id"), settings.clientId);
   assert.equal(url.searchParams.has("id_token_hint"), false);
-  assert.equal(url.searchParams.has("post_logout_redirect_uri"), false);
+  assert.equal(url.searchParams.get("post_logout_redirect_uri"), settings.origin + "/signed-out");
+  assert.deepEqual(url.searchParams.getAll("post_logout_redirect_uri"), [
+    settings.origin + "/signed-out",
+  ]);
 });
 
 test("providers without an end-session endpoint do not prevent local logout", () => {
