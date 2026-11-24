@@ -77,8 +77,8 @@ test("same-origin browser fetch logs out and clears cookies even without a sessi
     method: "POST",
     headers: { Origin: origin, [LOGOUT_REQUEST_HEADER]: "1" },
   }));
-  assert.equal(response.status, 303);
-  assert.equal(response.headers.get("location"), origin + "/signin");
+  assert.equal(response.status, 200);
+  assert.deepEqual(await response.json(), { next: "/signin" });
   assert.equal(response.headers.get("cache-control"), "no-store");
   assert.match(response.headers.get("set-cookie") || "", /eos_session=;/);
 });
@@ -89,8 +89,8 @@ test("browsers omitting Origin can logout only with same-origin Fetch Metadata",
     method: "POST",
     headers: { "Sec-Fetch-Site": "same-origin", [LOGOUT_REQUEST_HEADER]: "1" },
   }));
-  assert.equal(response.status, 303);
-  assert.equal(response.headers.get("location"), origin + "/signin");
+  assert.equal(response.status, 200);
+  assert.deepEqual(await response.json(), { next: "/signin" });
 });
 
 test("incomplete OIDC secret configuration rejects protected navigation", async () => {
@@ -99,4 +99,24 @@ test("incomplete OIDC secret configuration rejects protected navigation", async 
   const response = await proxy(new NextRequest(origin + "/projects"));
   assert.equal(response.status, 503);
   assert.equal(response.headers.get("cache-control"), "no-store");
+});
+
+test("Redis revocation outage prevents pretending local or provider logout succeeded", async () => {
+  const origin = configure();
+  const { SESSION_COOKIE, sealCookie } = await import("./oidc-session.ts");
+  const cookie = sealCookie(SESSION_COOKIE, {
+    sid: randomBytes(32).toString("base64url"),
+    accessToken: "staging-only-access-token",
+    expiresAt: Math.floor(Date.now() / 1000) + 60,
+  });
+  const response = await logout(new NextRequest(origin + "/auth/logout", {
+    method: "POST",
+    headers: {
+      Origin: origin,
+      "X-EvidenceOS-Logout": "1",
+      Cookie: SESSION_COOKIE + "=" + cookie,
+    },
+  }));
+  assert.equal(response.status, 503);
+  assert.equal(response.headers.get("set-cookie"), null);
 });
