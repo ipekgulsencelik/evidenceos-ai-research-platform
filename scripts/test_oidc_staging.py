@@ -6,6 +6,7 @@ import unittest
 from unittest.mock import patch
 
 import prepare_oidc_staging as generator
+import configure_oidc_staging_logout as logout_config
 
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -32,12 +33,56 @@ class IsolatedOidcStagingTests(unittest.TestCase):
         self.assertEqual(web["secret"], "client-test-secret")
         self.assertEqual(web["redirectUris"], ["http://127.0.0.1:3101/auth/callback"])
         self.assertEqual(
+            web["attributes"]["post.logout.redirect.uris"],
+            "http://127.0.0.1:3101/signed-out",
+        )
+        self.assertEqual(
             web["protocolMappers"][0]["config"]["included.custom.audience"],
             "evidenceos-api-staging",
         )
         self.assertEqual(
             web["protocolMappers"][0]["config"]["id.token.claim"], "false"
         )
+
+    def test_logout_registration_preserves_existing_keycloak_client(self):
+        client = {
+            "id": "staging-id-123",
+            "clientId": "evidenceos-web-staging",
+            "protocol": "openid-connect",
+            "publicClient": False,
+            "redirectUris": ["http://127.0.0.1:3101/auth/callback"],
+            "secret": "keep-this-existing-test-client-secret",
+            "attributes": {"custom.setting": "preserve-me"},
+        }
+        result = logout_config.updated_client(client)
+        self.assertEqual(
+            result["attributes"]["post.logout.redirect.uris"],
+            "http://127.0.0.1:3101/signed-out",
+        )
+        self.assertEqual(result["attributes"]["custom.setting"], "preserve-me")
+        self.assertEqual(result["secret"], "keep-this-existing-test-client-secret")
+        self.assertNotIn("post.logout.redirect.uris", client["attributes"])
+        self.assertEqual(logout_config.updated_client(result), result)
+        self.assertEqual(logout_config.ADMIN_BASE, "https://idp.localhost:8443")
+
+    def test_logout_registration_refuses_other_users_clients_or_callbacks(self):
+        from copy import deepcopy
+        good = {
+            "id": "staging-id-123", "clientId": "evidenceos-web-staging",
+            "protocol": "openid-connect", "publicClient": False,
+            "redirectUris": ["http://127.0.0.1:3101/auth/callback"],
+        }
+        for key, value in (
+            ("clientId", "another-client"),
+            ("publicClient", True),
+            ("protocol", "saml"),
+            ("redirectUris", ["https://other.example/auth/callback"]),
+            ("id", ""),
+        ):
+            invalid = deepcopy(good)
+            invalid[key] = value
+            with self.assertRaises(ValueError):
+                logout_config.updated_client(invalid)
 
     def test_staging_compose_is_namespaced_without_local_db_or_external_db_redis(self):
         config = (ROOT / "compose.oidc-staging.yaml").read_text(encoding="utf-8")
