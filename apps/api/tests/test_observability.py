@@ -1,7 +1,7 @@
 """No-secret structured request telemetry tests: no external database required."""
 
 import json
-from collections.abc import Iterator
+from collections.abc import AsyncIterator
 from uuid import UUID
 
 import pytest
@@ -12,7 +12,7 @@ from evidenceos.domain.entities.project import ResearchProject
 from evidenceos.infrastructure.config import Settings
 from evidenceos.presentation.api import observability
 from evidenceos.presentation.api.app import create_app
-from evidenceos.presentation.api.dependencies import get_uow_factory
+from evidenceos.presentation.api.dependencies import get_db_session, get_uow_factory
 from tests.fakes import FakeUnitOfWork
 
 DB = "postgresql+asyncpg://u:p@localhost:5432/test"
@@ -109,13 +109,14 @@ def test_healthy_liveness_is_suppressed_but_failed_health_is_recorded(
     client = TestClient(app)
     assert client.get("/api/v1/health/live").status_code == 200
     assert events == []
-    # Readiness without a database session is not healthy. The failure
-    # must stay visible without logging the connection string.
-    from evidenceos.presentation.api.dependencies import get_db_session
+    # A failed readiness DB query should be logged by status, never by
+    # raw connection strings or exception details.
+    class BrokenSession:
+        async def execute(self, _statement: object) -> None:
+            raise RuntimeError("private database details must never be logged")
 
-    async def broken_db() -> Iterator[object]:
-        raise RuntimeError("private database details must never be logged by telemetry")
-        yield
+    async def broken_db() -> AsyncIterator[BrokenSession]:
+        yield BrokenSession()
 
     app.dependency_overrides[get_db_session] = broken_db
     response = client.get("/api/v1/health/ready")
