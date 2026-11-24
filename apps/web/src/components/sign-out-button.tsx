@@ -22,14 +22,26 @@ export function SignOutButton() {
         cache: "no-store",
         headers: { [LOGOUT_REQUEST_HEADER]: "1" },
       });
-      // Follow the server's 303, but do not claim success if revocation
-      // failed or the expected sign-in redirect did not happen.
-      if (!response.ok || !response.redirected ||
-          new URL(response.url).origin !== window.location.origin ||
-          new URL(response.url).pathname !== "/signin") {
+      // The same-origin server must confirm Redis revocation and provide
+      // the trusted next navigation target. A browser fetch must never
+      // follow a cross-origin IdP redirect; that would be blocked by CORS.
+      const payload: unknown = await response.json().catch(() => null);
+      if (!response.ok || !payload || typeof payload !== "object" ||
+          !("next" in payload) || typeof payload.next !== "string") {
         throw new Error("Unable to confirm browser session revocation.");
       }
-      window.location.replace("/signin");
+      const next: string = payload.next;
+      if (next === "/signin" || next === "/signin?notice=provider-logout-unavailable") {
+        window.location.replace(next);
+      } else {
+        const url = new URL(next);
+        if (url.protocol !== "https:" || url.username || url.password ||
+            url.hash || !url.pathname.endsWith("/protocol/openid-connect/logout")) {
+          throw new Error("Unexpected provider logout destination.");
+        }
+        // This is a navigation (not a fetch) so Keycloak can clear SSO cookies.
+        window.location.assign(url.href);
+      }
     } catch {
       setError("Sign out could not be confirmed. Please try again.");
       setPending(false);
