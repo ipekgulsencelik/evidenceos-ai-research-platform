@@ -24,3 +24,6 @@ playwright-report/
 # Disposable OIDC staging contains test user passwords, client secrets and TLS keys.
 staging/runtime/
 .env.oidc-staging
+
+# HTTPS ingress reference credentials and private keys; never commit.
+deploy/ingress/certs/
