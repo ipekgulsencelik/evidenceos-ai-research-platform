@@ -24,6 +24,30 @@ type BackendPayload =
 export interface GatewayResult {
   status: number;
   body: BackendPayload | { detail: string };
+  retryAfterSeconds?: number;
+}
+
+/** Whitelist only the rate-limit retry hint, never arbitrary upstream headers. */
+export function gatewayResponseHeaders(result: GatewayResult): Record<string, string> {
+  const headers: Record<string, string> = { "Cache-Control": "no-store" };
+  if (
+    (result.status === 429 || result.status === 503) &&
+    result.retryAfterSeconds !== undefined &&
+    Number.isInteger(result.retryAfterSeconds) &&
+    result.retryAfterSeconds >= 1 &&
+    result.retryAfterSeconds <= 86400
+  ) {
+    headers["Retry-After"] = String(result.retryAfterSeconds);
+  }
+  return headers;
+}
+
+function verifiedRetryAfter(status: number, value: string | null): number | undefined {
+  if ((status !== 429 && status !== 503) || !value || !/^[0-9]{1,5}$/.test(value)) {
+    return undefined;
+  }
+  const seconds = Number(value);
+  return seconds >= 1 && seconds <= 86400 ? seconds : undefined;
 }
 
 function endpoint(path: string): URL {
@@ -87,6 +111,7 @@ export async function callBackend(path: string, init?: RequestInit): Promise<Gat
       return {
         status: upstream.status >= 400 && upstream.status < 600 ? upstream.status : 502,
         body: { detail: typeof value === "string" ? value : "Research service returned an error." },
+        retryAfterSeconds: verifiedRetryAfter(upstream.status, upstream.headers.get("Retry-After")),
       };
     }
     return { status: upstream.status, body: payload as BackendPayload };
