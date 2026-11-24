@@ -96,7 +96,7 @@ The suite uses only project metadata endpoints and never submits sensitive
 research papers to an LLM provider. The provider client must register the
 exact `EVIDENCEOS_WEB_ORIGIN/signed-out` Valid Post Logout Redirect URI.
 The acceptance flow follows the provider's optional confirmation/link and
-checks the EvidenceOS **Sign in again** page before reauthentication.
+checks the EvidenceOS **Sign in again** page and its one-click reauthentication.
 
 ## Limits and production criteria
 
