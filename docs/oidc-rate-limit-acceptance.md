@@ -12,34 +12,40 @@ that suite intentionally performs more operations and may be throttled.
 
 ## Run from repository root
 
-First confirm that the standard Keycloak staging stack is healthy, and
-that you are signed in at `http://127.0.0.1:3101/projects`. Keep the
-browser session active.
+First confirm the standard Keycloak staging stack is healthy. The test
+creates **its own fresh browser login** and does not depend on how long the
+user's Chrome session has been open. The EvidenceOS browser session lasts
+at most ten minutes, so a long-lived manual DevTools tab can return
+`401 Unauthorized` before reaching the quota.
 
 ```powershell
 docker compose --env-file .env.oidc-staging -f compose.oidc-staging.yaml -f compose.oidc-rate-limit-test.yaml up -d --no-deps --force-recreate api
 python scripts/check_oidc_staging.py
+python scripts/run_local_oidc_rate_limit_e2e.py
 ```
 
-In that signed-in browser, open DevTools -> Console and execute:
+Expected: Playwright reports `1 passed`, and logs only HTTP status codes,
+including `429` with a positive numeric `Retry-After` header.
+It uses an existing **staging-only** Keycloak identity from the untracked
+`.env.oidc-staging`; credentials are not printed or persisted. The
+real OIDC callback validates the API token first, and the automated
+browser immediately exercises the BFF and Redis quota before the new
+cookie expires. Prior use of the same test identity in the preceding
+minute may reduce the number of successful `200` responses.
 
-```javascript
-for (let i = 1; i <= 10; i++) {
-  const response = await fetch("/api/projects", { cache: "no-store" });
-  console.log(i, response.status, response.headers.get("Retry-After"));
-}
+If Playwright is missing in `apps/web`, install the locally tested version
+there before launching the script:
+
+```powershell
+cd apps/web
+npm install --no-save --package-lock=false @playwright/test@1.60.0
+npx playwright install chromium
+cd ../..
 ```
 
-Expected results: at least one HTTP `429` response with a **positive,
-numeric** `Retry-After` header. Earlier responses should normally be
-`200`, unless the verified user already consumed quota in the last
-60 seconds. The browser API route must not expose Redis credentials or
-Keycloak bearer tokens. This test only reads the user's project collection
-and creates no new research projects.
-
-For an independent quota-reset check, repeat the same read after the
-first quota window expires. An admitted request should then return `200`
-if the API and database are otherwise healthy.
+The manual Chrome Console loop remains an optional debugging method, but
+an expired session cannot demonstrate rate limiting. Do not interpret ten
+consecutive `401` statuses as a Redis rate-limit failure.
 
 ## Always restore the original staging configuration
 
