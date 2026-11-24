@@ -117,20 +117,20 @@ def test_production_requires_shared_limiter_and_tls() -> None:
         database_url=DATABASE,
     )
     with pytest.raises(ValidationError):
-        Settings(**common)
+        Settings.model_validate(common)
     with pytest.raises(ValidationError):
-        Settings(
+        Settings.model_validate({
             **common,
-            rate_limit_enabled=True,
-            rate_limit_redis_url="redis://redis.test:6379",
-            rate_limit_redis_password=SECRET,
-        )
-    secure = Settings(
+            "rate_limit_enabled": True,
+            "rate_limit_redis_url": "redis://redis.test:6379",
+            "rate_limit_redis_password": SECRET,
+        })
+    secure = Settings.model_validate({
         **common,
-        rate_limit_enabled=True,
-        rate_limit_redis_url="rediss://redis.test:6379",
-        rate_limit_redis_password=SECRET,
-    )
+        "rate_limit_enabled": True,
+        "rate_limit_redis_url": "rediss://redis.test:6379",
+        "rate_limit_redis_password": SECRET,
+    })
     assert secure.rate_limit_enabled is True
 
 
