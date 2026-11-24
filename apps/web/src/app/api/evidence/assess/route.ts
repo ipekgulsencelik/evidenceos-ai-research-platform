@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { validateEvidenceRequest } from "@/lib/evidence";
-import { callBackend } from "@/lib/server-proxy";
+import { callBackend, gatewayResponseHeaders } from "@/lib/server-proxy";
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
   const body: unknown = await request.json().catch(() => null);
@@ -14,7 +14,6 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     body: JSON.stringify(body),
   });
   return NextResponse.json(response.body, {
-    status: response.status,
-    headers: { "Cache-Control": "no-store" },
+    status: response.status, headers: gatewayResponseHeaders(response),
   });
 }
