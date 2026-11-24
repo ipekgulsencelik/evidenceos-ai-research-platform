@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { MAX_PDF_BYTES } from "@/lib/document";
 import { validateLiteratureUpload } from "@/lib/literature";
-import { callBackend } from "@/lib/server-proxy";
+import { callBackend, gatewayResponseHeaders } from "@/lib/server-proxy";
 
 export const runtime = "nodejs";
 
@@ -32,7 +32,6 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     method: "POST", body: outgoing,
   });
   return NextResponse.json(result.body, {
-    status: result.status,
-    headers: { "Cache-Control": "no-store" },
+    status: result.status, headers: gatewayResponseHeaders(result),
   });
 }
