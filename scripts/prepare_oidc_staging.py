@@ -24,6 +24,7 @@ ISSUER = "https://idp.localhost:8443/realms/evidenceos-staging"
 ORIGIN = "http://127.0.0.1:3101"
 API_AUDIENCE = "evidenceos-api-staging"
 CLIENT_ID = "evidenceos-web-staging"
+POST_LOGOUT_RETURN = ORIGIN + "/signed-out"
 
 
 def realm_config(client_secret: str, password_a: str, password_b: str) -> dict:
@@ -49,6 +50,8 @@ def realm_config(client_secret: str, password_a: str, password_b: str) -> dict:
                 "serviceAccountsEnabled": False,
                 "redirectUris": [ORIGIN + "/auth/callback"],
                 "webOrigins": [ORIGIN],
+                # Exact destination; never wildcard or unrelated trusted domain.
+                "attributes": {"post.logout.redirect.uris": POST_LOGOUT_RETURN},
                 "protocolMappers": [
                     {
                         "name": "api-audience",
