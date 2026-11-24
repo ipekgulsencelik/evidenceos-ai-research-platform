@@ -64,6 +64,31 @@ async function listProjects(context) {
   return response.json();
 }
 
+async function logOutAtProvider(page, context) {
+  await page.getByRole("button", { name: "Sign out" }).click();
+  await page.waitForURL((url) =>
+    url.origin !== new URL(origin).origin || url.pathname === "/signin",
+  { timeout: 45000 });
+
+  // Keycloak intentionally shows a confirmation screen for a client_id-only
+  // RP-Initiated Logout. It cannot be skipped without id_token_hint.
+  if (new URL(page.url()).origin !== new URL(origin).origin) {
+    const confirm = page.getByRole("button", { name: /^(Log out|Logout|Yes)$/i });
+    if (await confirm.isVisible({ timeout: 3000 }).catch(() => false)) {
+      await confirm.click();
+    }
+  }
+
+  // Local revocation must already have taken effect, even if the IdP prompts.
+  expect((await context.request.get(origin + "/api/identity")).status()).toBe(401);
+
+  // Prove that provider SSO was cleared as well: a new login must display
+  // the provider's username form, rather than silently returning to EvidenceOS.
+  await page.goto(origin + "/signin");
+  await page.getByRole("link", { name: "Sign in securely" }).click();
+  await expect(page.locator('input[name="username"]')).toBeVisible({ timeout: 45000 });
+}
+
 test("real IdP PKCE, two users, RBAC, CSRF, logout and stolen-cookie replay", async ({ browser }) => {
   assertStagingConfiguration();
   const ownerContext = await browser.newContext();
@@ -133,9 +158,7 @@ test("real IdP PKCE, two users, RBAC, CSRF, logout and stolen-cookie replay", as
     const cookie = (await ownerContext.cookies(origin)).find((c) => c.name === "eos_session");
     expect(cookie).toBeDefined();
     expect(cookie.httpOnly).toBe(true);
-    await owner.page.getByRole("button", { name: "Sign out" }).click();
-    await owner.page.waitForURL((url) => url.origin === origin && url.pathname === "/signin");
-    expect((await ownerContext.request.get(origin + "/api/identity")).status()).toBe(401);
+    await logOutAtProvider(owner.page, ownerContext);
 
     replayContext = await browser.newContext();
     await replayContext.addCookies([cookie]);
@@ -144,9 +167,7 @@ test("real IdP PKCE, two users, RBAC, CSRF, logout and stolen-cookie replay", as
     // Member remains logged in; logout revokes a single browser session,
     // not other users' sessions.
     expect((await memberContext.request.get(origin + "/api/identity")).status()).toBe(200);
-    await member.page.getByRole("button", { name: "Sign out" }).click();
-    await member.page.waitForURL((url) => url.origin === origin && url.pathname === "/signin");
-    expect((await memberContext.request.get(origin + "/api/identity")).status()).toBe(401);
+    await logOutAtProvider(member.page, memberContext);
   } finally {
     if (replayContext) await replayContext.close();
     await ownerContext.close();

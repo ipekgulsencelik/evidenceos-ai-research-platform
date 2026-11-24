@@ -141,7 +141,17 @@ The launcher reads untracked local credentials into the test process
 without printing them. It refuses any address other than
 `http://127.0.0.1:3101`. The genuine Playwright browser suite verifies
 two separate OIDC login sessions, JWT-backed identity, project isolation,
-role grant/revoke, CSRF denial, session logout and replay rejection.
+role grant/revoke, CSRF denial, local session revocation, provider SSO logout
+and replay rejection. In Keycloak 26, the `client_id`-only RP-Initiated Logout
+request displays a confirmation screen. The browser test completes that
+confirmation and then asserts that a new login requires credentials.
+
+When testing manually, click **Sign out** in the EvidenceOS workspace;
+confirm the logout on Keycloak's own screen if asked, then navigate to
+`http://127.0.0.1:3101/signin`. Clicking **Sign in securely** should
+open the Keycloak username/password form again. A failed provider logout
+will display a warning at the EvidenceOS sign-in page, but local Redis
+revocation still prevents use of the old application session.
 
 The E2E run **creates a test project in the isolated staging database**.
 It does not read or modify your existing research projects. Re-running the

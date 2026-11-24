@@ -86,9 +86,11 @@ npx playwright test --config playwright.staging.config.mjs
 5. Owner grants viewer, viewer gains READ but cannot manage memberships.
 6. OWNER cannot be demoted through member management.
 7. Owner revokes viewer; active viewer session immediately loses project access.
-8. Sign out clears the browser session and revokes its Redis record. A copied
-   encrypted cookie is rejected after logout, while the other authenticated
-   user remains signed in.
+8. Sign out revokes the browser's Redis record before initiating a
+   standard OIDC RP-Initiated Logout. The browser completes any provider
+   confirmation screen and verifies that the next login needs credentials.
+   A copied encrypted cookie is rejected after logout, while the other
+   authenticated user's independent browser session stays signed in.
 
 The suite uses only project metadata endpoints and never submits sensitive
 research papers to an LLM provider.
@@ -104,8 +106,8 @@ deployment.
 
 This test does not assert that browser logout revokes an independently
 exfiltrated raw JWT at the FastAPI resource server. Such JWTs stay valid
-until their expiry or provider-side revocation. It also does not test IdP
-global SSO logout, MFA, device session inventory, or concurrent ownership
-transfer. Provider-specific login selectors may require adaptation in the
+until their expiry or provider-side revocation. It verifies logout of the **current browser's** provider SSO session,
+not other devices, linked identity providers, MFA, device session inventory,
+or concurrent ownership transfer. Provider-specific login selectors may require adaptation in the
 staging test; never weaken issuer, signature, audience or TLS validation
 to accommodate a provider.
