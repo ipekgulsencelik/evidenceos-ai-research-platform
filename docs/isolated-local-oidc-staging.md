@@ -170,9 +170,9 @@ When testing manually, click **Sign out** in the EvidenceOS workspace.
 Keycloak may show its own confirmation screen and return-to-application link.
 After confirming logout and following that link (if displayed), the browser
 should show `http://127.0.0.1:3101/signed-out` with **You are logged out**
-and **Sign in again**. That link opens EvidenceOS `/signin` without
-automatically starting a new OIDC session. Clicking **Sign in securely**
-should then request Keycloak credentials again. A failed provider logout
+and **Sign in again**. The page does not start authentication automatically;
+**one intentional click** on Sign in again starts a fresh OIDC login and should
+request Keycloak credentials. A failed provider logout
 shows a warning at EvidenceOS sign-in; local Redis revocation still prevents
 use of the former EvidenceOS session.
 
