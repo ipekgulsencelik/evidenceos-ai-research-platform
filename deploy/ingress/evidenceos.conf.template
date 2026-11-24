@@ -1,0 +1,88 @@
+# EvidenceOS HTTPS ingress reference; NOT a production-ready deployment.
+# nginx official image: envsubst renders only variables whose names start with
+# EVIDENCEOS_INGRESS_, preserving Nginx $remote_addr and $request_uri.
+server_tokens off;
+# Avoid logging request URLs, query strings, authorization or cookies by default.
+# Production telemetry still needs owned retention and access-control policies.
+log_format evidenceos_safe 'rid=$request_id method=$request_method status=$status '
+                          'duration=$request_time upstream=$upstream_status';
+
+limit_req_zone $binary_remote_addr zone=ingress_global:10m rate=10r/s;
+limit_req_zone $binary_remote_addr zone=ingress_login:10m rate=1r/s;
+limit_conn_zone $binary_remote_addr zone=ingress_connections:10m;
+
+# Reject unknown Host rather than reflecting an attacker-controlled redirect.
+server {
+    listen 8080 default_server;
+    server_name _;
+    access_log /dev/stdout evidenceos_safe;
+    return 444;
+}
+
+server {
+    listen 8080;
+    server_name ${EVIDENCEOS_INGRESS_HOST};
+    access_log /dev/stdout evidenceos_safe;
+    return 308 https://${EVIDENCEOS_INGRESS_HOST}$request_uri;
+}
+
+# Unknown TLS Host/SNI: do not forward to the application.
+server {
+    listen 8443 ssl default_server;
+    server_name _;
+    ssl_certificate /etc/nginx/ingress-tls/fullchain.pem;
+    ssl_certificate_key /etc/nginx/ingress-tls/privkey.pem;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    return 421;
+}
+
+server {
+    listen 8443 ssl;
+    server_name ${EVIDENCEOS_INGRESS_HOST};
+    access_log /dev/stdout evidenceos_safe;
+    ssl_certificate /etc/nginx/ingress-tls/fullchain.pem;
+    ssl_certificate_key /etc/nginx/ingress-tls/privkey.pem;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_session_tickets off;
+    ssl_prefer_server_ciphers off;
+
+    client_max_body_size 10m;
+    client_header_timeout 15s;
+    client_body_timeout 30s;
+    send_timeout 30s;
+    keepalive_timeout 30s;
+    limit_req_status 429;
+    limit_conn_status 429;
+    limit_conn ingress_connections 20;
+    limit_req zone=ingress_global burst=40 nodelay;
+
+    # Emit one HSTS value over TLS. Preserve the application's nonce CSP.
+    proxy_hide_header Strict-Transport-Security;
+    add_header Strict-Transport-Security "max-age=31536000" always;
+
+    # Never trust client-supplied X-Forwarded-* headers.
+    proxy_http_version 1.1;
+    proxy_set_header Connection "";
+    proxy_set_header Host ${EVIDENCEOS_INGRESS_HOST};
+    proxy_set_header X-Forwarded-Host ${EVIDENCEOS_INGRESS_HOST};
+    proxy_set_header X-Forwarded-Proto https;
+    proxy_set_header X-Forwarded-Port 443;
+    proxy_set_header X-Forwarded-For $remote_addr;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_connect_timeout 5s;
+    proxy_send_timeout 120s;
+    proxy_read_timeout 120s;
+    proxy_request_buffering on;
+
+    # This protects only the application's login-start endpoint. The actual
+    # IdP must also enforce login throttling and MFA; no global DDoS guarantee.
+    location = /auth/login {
+        limit_req zone=ingress_global burst=40 nodelay;
+        limit_req zone=ingress_login burst=4 nodelay;
+        proxy_pass http://${EVIDENCEOS_INGRESS_UPSTREAM};
+    }
+
+    location / {
+        proxy_pass http://${EVIDENCEOS_INGRESS_UPSTREAM};
+    }
+}
