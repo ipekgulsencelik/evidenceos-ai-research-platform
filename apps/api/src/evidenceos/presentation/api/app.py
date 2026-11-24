@@ -27,6 +27,7 @@ from evidenceos.domain.errors import (
 )
 from evidenceos.infrastructure.config import Settings, get_settings
 from evidenceos.infrastructure.oidc import OidcAccessTokenVerifier
+from evidenceos.infrastructure.redis_rate_limits import RedisApiRateLimiter
 from evidenceos.infrastructure.providers.groq_evidence import (
     EvidenceProviderFailure,
     EvidenceProviderUnavailable,
@@ -47,6 +48,7 @@ from evidenceos.presentation.api.routes.quality import router as quality_router
 from evidenceos.presentation.api.routes.semantic import router as semantic_router
 from evidenceos.presentation.api.routes.workspace import router as workspace_router
 from evidenceos.presentation.api.security import validate_service_credential
+from evidenceos.presentation.api.rate_limits import enforce_research_rate_limit
 
 
 class RequestIdMiddleware(BaseHTTPMiddleware):
@@ -73,6 +75,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 yield
             finally:
                 await engine.dispose()
+                if config.rate_limit_enabled:
+                    await app.state.rate_limiter.aclose()
 
     app = FastAPI(
         title="EvidenceOS API",
@@ -83,6 +87,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         redoc_url=None,
     )
     app.state.settings = config
+    if config.rate_limit_enabled:
+        app.state.rate_limiter = RedisApiRateLimiter(
+            config.rate_limit_redis_url or "", config.rate_limit_redis_password or ""
+        )
     app.add_middleware(RequestIdMiddleware)
     if config.cors_origins:
         app.add_middleware(
@@ -161,8 +169,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     # Keep identity verification on all research routes, but do not construct
     # a database UoW for stateless routes with no project identifier.
-    authenticated = [Depends(validate_service_credential)]
-    project_scoped = [Depends(validate_service_credential), Depends(require_project_access)]
+    authenticated = [Depends(enforce_research_rate_limit)]
+    project_scoped = [Depends(enforce_research_rate_limit), Depends(require_project_access)]
     for router in (literature_router, document_router, evidence_router, academic_router):
         app.include_router(router, prefix="/api/v1", dependencies=authenticated)
     for router in (
