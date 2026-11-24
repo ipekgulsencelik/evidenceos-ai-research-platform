@@ -2,6 +2,7 @@
 
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from time import perf_counter
 from uuid import uuid4
 
 import httpx
@@ -34,6 +35,7 @@ from evidenceos.infrastructure.providers.groq_evidence import (
 from evidenceos.infrastructure.providers.pypdf_document import InvalidPdfDocument, PdfTooLarge
 from evidenceos.infrastructure.redis_rate_limits import RedisApiRateLimiter
 from evidenceos.presentation.api.access import require_project_access
+from evidenceos.presentation.api.observability import observe_completion, route_group
 from evidenceos.presentation.api.rate_limits import enforce_research_rate_limit
 from evidenceos.presentation.api.routes.academic import router as academic_router
 from evidenceos.presentation.api.routes.access import identity_router
@@ -52,10 +54,29 @@ from evidenceos.presentation.api.routes.workspace import router as workspace_rou
 
 class RequestIdMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
+        # Never accept user-supplied correlation IDs or copy them into logs.
         request_id = str(uuid4())
         request.state.request_id = request_id
-        response = await call_next(request)
+        started = perf_counter()
+        try:
+            response = await call_next(request)
+        except Exception:
+            observe_completion(
+                request_id=request_id,
+                method=request.method,
+                status_code=500,
+                elapsed_ms=int((perf_counter() - started) * 1000),
+                group=route_group(request.scope),
+            )
+            raise
         response.headers["X-Request-ID"] = request_id
+        observe_completion(
+            request_id=request_id,
+            method=request.method,
+            status_code=response.status_code,
+            elapsed_ms=int((perf_counter() - started) * 1000),
+            group=route_group(request.scope),
+        )
         return response
 
 
