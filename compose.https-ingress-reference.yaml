@@ -1,0 +1,39 @@
+# Reference ONLY. This opt-in overlay never publishes a public port.
+# It DOES NOT turn the existing HTTP OIDC staging origin into an HTTPS origin.
+# Before any real HTTPS/OIDC deployment, configure the exact HTTPS app origin,
+# corresponding IdP callbacks, secrets, certificates and trust boundaries.
+#
+# Validate configuration (requires .env for compose.yaml):
+# EVIDENCEOS_INGRESS_HOST=research.example.invalid docker compose \
+#   -f compose.yaml -f compose.https-ingress-reference.yaml config --quiet
+services:
+  ingress:
+    image: nginx:stable-alpine
+    restart: "no"
+    environment:
+      EVIDENCEOS_INGRESS_HOST: ${EVIDENCEOS_INGRESS_HOST:?Set an exact DNS name for this reference}
+      EVIDENCEOS_INGRESS_UPSTREAM: web:3000
+      # nginx's official entrypoint substitutes only these trusted variables.
+      # All Nginx $remote_addr, $request_uri and other variables remain intact.
+      NGINX_ENVSUBST_FILTER: "^EVIDENCEOS_INGRESS_"
+    volumes:
+      - ./deploy/ingress/evidenceos.conf.template:/etc/nginx/templates/evidenceos.conf.template:ro
+      - ./deploy/ingress/certs/fullchain.pem:/etc/nginx/ingress-tls/fullchain.pem:ro
+      - ./deploy/ingress/certs/privkey.pem:/etc/nginx/ingress-tls/privkey.pem:ro
+    ports:
+      # Explicitly loopback-only; never convert this example into a public
+      # deployment by switching the binding to 0.0.0.0.
+      - "127.0.0.1:${EVIDENCEOS_INGRESS_HTTP_PORT:-9080}:8080"
+      - "127.0.0.1:${EVIDENCEOS_INGRESS_HTTPS_PORT:-9443}:8443"
+    depends_on:
+      web:
+        condition: service_healthy
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - NET_RAW
+    healthcheck:
+      test: ["CMD", "nginx", "-t"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
