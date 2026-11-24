@@ -6,7 +6,6 @@ Docker/OpenSSL validation is intended for the Ubuntu CI runner.
 from __future__ import annotations
 
 from pathlib import Path
-import re
 import shutil
 import subprocess
 import sys
@@ -60,6 +59,8 @@ class IngressReferenceTests(unittest.TestCase):
         self.assertNotIn("$proxy_add_x_forwarded_for", content)
         # Do not overwrite the application's nonce-based CSP header.
         self.assertNotIn("add_header Content-Security-Policy", content)
+        self.assertIn("access_log /dev/stdout evidenceos_safe;", content)
+        self.assertNotIn("$request_uri", content.split("log_format evidenceos_safe")[1].split(";")[0])
 
     def test_overlay_never_opens_a_public_host_port(self) -> None:
         content = OVERLAY.read_text(encoding="utf-8")
