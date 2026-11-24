@@ -24,7 +24,8 @@ async def readiness(session: Annotated[AsyncSession, Depends(get_db_session)]) -
     try:
         await session.execute(text("SELECT 1"))
     except Exception:  # noqa: BLE001 - readiness intentionally masks DB internals
-        logger.exception("Readiness database check failed")
+        # Never expose a connection URI, SQL parameters or driver diagnostics in logs.
+        logger.warning("health.database_unavailable")
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="database unavailable",

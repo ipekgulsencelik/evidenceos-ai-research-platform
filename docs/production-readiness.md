@@ -51,7 +51,7 @@ public production topology.
 
 | Gate | Required evidence / acceptance |
 | --- | --- |
-| Monitoring and alerting | Request IDs correlated across BFF/API, sanitized structured logs, error-rate/latency, auth failures, rate-limit 429/503, Redis/Postgres, resource pressure and upstream-provider availability with actionable alerts |
+| Monitoring and alerting | FastAPI now emits privacy-minimized structured request events (see [observability foundation](api-observability-foundation.md)); cross-service request correlation, centralized log collection, error-rate/latency alerting, Redis/Postgres resource telemetry and upstream-provider monitoring remain unimplemented |
 | Privacy-preserving audit | Least-privilege access to actor-attributed audit records; retention, export, tamper detection and log redaction; ensure JWTs, cookies, passwords and PDF text do not enter logs |
 | Backup / disaster recovery | Encrypted PostgreSQL backups, verified off-host retention, **restore drill on a separate instance**, target RPO/RTO, schema migration rehearsal; test lost Redis as fail-closed with recovery |
 | Load / resilience | Realistic concurrent users and worst-case PDF/LLM request patterns, tail latency, 429 fairness, resource ceilings, provider outages and graceful recovery |
