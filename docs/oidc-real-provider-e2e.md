@@ -93,7 +93,10 @@ npx playwright test --config playwright.staging.config.mjs
    authenticated user's independent browser session stays signed in.
 
 The suite uses only project metadata endpoints and never submits sensitive
-research papers to an LLM provider.
+research papers to an LLM provider. The provider client must register the
+exact `EVIDENCEOS_WEB_ORIGIN/signed-out` Valid Post Logout Redirect URI.
+The acceptance flow follows the provider's optional confirmation/link and
+checks the EvidenceOS **Sign in again** page before reauthentication.
 
 ## Limits and production criteria
 
