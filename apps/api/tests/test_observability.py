@@ -93,7 +93,9 @@ def test_unauthorized_and_unmatched_requests_emit_safe_bounded_events(
             )
         )
     )
-    rejected = client.get("/api/v1/projects?jwt=top-secret", headers={"Authorization": "Bearer bad"})
+    rejected = client.get(
+        "/api/v1/projects?jwt=top-secret", headers={"Authorization": "Bearer bad"}
+    )
     assert rejected.status_code == 401
     unknown = client.get("/secret-path-with-user-identity-012345")
     assert unknown.status_code == 404
