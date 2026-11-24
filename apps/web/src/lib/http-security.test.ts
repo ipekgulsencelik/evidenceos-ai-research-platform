@@ -36,7 +36,8 @@ test("CSP nonces are fresh and never permit unsafe-inline scripts", () => {
   assert.match(first, /^[A-Za-z0-9+/]{22}==$/);
   assert.notEqual(first, second);
   const production = contentSecurityPolicy(first, false);
-  assert.match(production, new RegExp("nonce-" + first));
+  // CSP base64 nonces may contain regex metacharacters such as '+'.
+  assert.ok(production.includes("'nonce-" + first + "'"));
   assert.match(production, /script-src 'self' 'nonce-[^']+' 'strict-dynamic'/);
   assert.ok(!production.includes("'unsafe-eval'"));
   assert.ok(!production.split("; ").find((s) => s.startsWith("script-src"))?.includes("'unsafe-inline'"));
