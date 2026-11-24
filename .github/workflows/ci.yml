@@ -138,6 +138,10 @@ jobs:
           docker compose -f compose.oidc-staging.yaml config --quiet
           docker compose -f compose.oidc-staging.yaml -f compose.oidc-rate-limit-test.yaml config --quiet
           python -m py_compile scripts/run_local_oidc_rate_limit_e2e.py
+      - name: Validate isolated HTTPS ingress reference (no public listener)
+        run: |
+          EVIDENCEOS_INGRESS_HOST=research.example.invalid docker compose -f compose.yaml -f compose.https-ingress-reference.yaml config --quiet
+          python -m unittest discover -s scripts -p 'test_https_ingress_reference.py' -v
       - name: Build API image
         run: docker build -t evidenceos-api:ci apps/api
       - name: Build Web image
