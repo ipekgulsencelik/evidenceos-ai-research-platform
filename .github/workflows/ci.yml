@@ -32,6 +32,17 @@ jobs:
         run: uv run mypy
       - name: Tests and coverage
         run: uv run pytest --cov=evidenceos --cov-report=term-missing --cov-fail-under=80
+      - name: Atomic shared rate limits against disposable Redis
+        run: |
+          docker run -d --name evidenceos-api-rate-redis -p 127.0.0.1:16379:6379 redis:7-alpine redis-server --save "" --appendonly no --requirepass ci-only-rate-limit-password-01234567890123456789
+          trap 'docker rm -f evidenceos-api-rate-redis' EXIT
+          for attempt in 1 2 3 4 5 6 7 8 9 10; do
+            if docker exec -e REDISCLI_AUTH=ci-only-rate-limit-password-01234567890123456789 evidenceos-api-rate-redis redis-cli ping | grep -q PONG; then
+              break
+            fi
+            sleep 1
+          done
+          EVIDENCEOS_RATE_LIMIT_TEST_URL=redis://127.0.0.1:16379 EVIDENCEOS_RATE_LIMIT_TEST_PASSWORD=ci-only-rate-limit-password-01234567890123456789 uv run pytest -m integration tests/test_rate_limit_redis.py
 
   postgres-integration:
     runs-on: ubuntu-latest
