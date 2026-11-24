@@ -1,6 +1,6 @@
 # EvidenceOS — Research Intelligence Platform
 
-EvidenceOS combines source-backed academic research and DOI bibliographic checking. **The current implementation includes a functional academic search API and a web workspace.** Legal research, full-text scientific claim verification, and advanced AI analysis are future work.
+EvidenceOS is a source-grounded academic research MVP with OpenAlex search, DOI checking, PDF passage and literature analysis, research-project persistence, and optional consent-gated AI-assisted workflows. It supports project-scoped OIDC authentication, RBAC and local security regressions. Legal research, scientifically validated automatic claim verification and a publicly deployable multi-tenant service remain future work.
 
 ## Stack
 
@@ -55,7 +55,7 @@ GitHub Actions runs backend lint, strict typing, coverage, PostgreSQL integratio
 
 ## Operational and security limitations
 
-This software is an **early-stage development system**. It does not yet include authentication, authorization, RBAC, tenant isolation, public rate limiting, security reviews, audit logs, or legal counsel signoff. **Do not publish the web or API service to the internet or process sensitive customer data.** Web and API host ports bind to `127.0.0.1` for local use. OpenAlex and Crossref are external dependencies whose data access and usage terms must be respected.
+This software is an **early-stage MVP, not an approved production service**. The current implementation includes OIDC login, project-level RBAC, central session revocation, defensive browser headers and authenticated Redis API quotas. However, public HTTPS ingress, anonymous/login/connection-level abuse controls, production identity-provider operations, secrets management, monitoring, backup/restore drills, independent review and deployment approvals **remain incomplete**. **Do not publish the web or API service to the internet or process sensitive customer or patient-identifiable data.** Development ports bind to `127.0.0.1`. OpenAlex and Crossref are external services with their own terms. See [Production readiness](docs/production-readiness.md) for the explicit go/no-go gate.
 
 Web dependency versions are pinned by the committed `apps/web/package-lock.json`; CI and Docker use `npm ci` to install reproducibly.
 
@@ -90,8 +90,7 @@ as evidence. See docs/literature-review-quality.md.
 Academic projects can now persist server-generated literature analyses and
 append-only reviewer revisions in PostgreSQL. PDF binaries are not saved.
 Requires the additive 0002 Alembic migration (Docker Compose handles it).
-This is localhost-only: no authentication or access control. See
-docs/research-workspace.md for workflow, privacy limits and API contracts.
+This milestone began as localhost-only. The current repository additionally provides optional OIDC authentication and project-scoped RBAC; see the later security sections and [production readiness](docs/production-readiness.md). The original workflow and privacy boundaries are documented in docs/research-workspace.md.
 
 
 ## Research Library and Evidence Coverage Comparison
@@ -153,9 +152,7 @@ mode, legacy projects will **not** be implicitly claimed by a new user.
 Current local and service-token modes remain **single operator** and are
 not equivalent to end-user sign-in or per-user isolation.
 
-This does **not** implement OIDC, browser sessions or production-ready
-multi-user security. Review the scope, role policy and migration safety
-notes in [docs/project-rbac-audit-foundation.md](docs/project-rbac-audit-foundation.md).
+That RBAC foundation was subsequently extended with OIDC, browser sessions and real-provider local E2E testing. These controls are **not** a full production multi-user security approval. Review the scope, role policy and migration safety notes in [docs/project-rbac-audit-foundation.md](docs/project-rbac-audit-foundation.md).
 
 ## OIDC resource-server verification
 
