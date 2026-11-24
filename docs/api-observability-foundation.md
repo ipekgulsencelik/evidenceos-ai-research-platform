@@ -13,9 +13,10 @@ completed FastAPI request to a structured JSON log written to stdout by
 {"event":"http.request.completed","request_id":"<server-generated UUID>","method":"GET","route_group":"projects","status_code":200,"duration_ms":17}
 ```
 
-The route group is derived from registered route templates and maps to a
-small fixed vocabulary: health, projects, academic, documents, evidence,
-literature, other and unmatched. It never contains a literal project ID,
+The route group is assigned only after the framework has matched a
+registered route, using fixed path-prefix comparisons; **only** the
+fixed vocabulary is emitted: health, projects, academic, documents,
+evidence, literature, other and unmatched. It never contains a literal project ID,
 the raw URL or any user-provided value. Unknown HTTP methods are recorded
 as `OTHER`. No success-level liveness/readiness noise is logged; failures
 remain visible. Unhandled exceptions are counted as 500 without including
