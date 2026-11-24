@@ -118,7 +118,7 @@ def validate_policy(value: object) -> list[str]:
 
     recovery = sections["recovery"]
     mode = recovery.get("backup_mode")
-    if mode not in BACKUP_MODES:
+    if not isinstance(mode, str) or mode not in BACKUP_MODES:
         errors.append("policy.recovery.backup_mode: unsupported")
     number_fields = {
         "recovery": ("target_rpo_minutes", "target_rto_minutes", "backup_interval_minutes"),
