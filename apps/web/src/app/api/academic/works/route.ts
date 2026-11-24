@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { validateSearch } from "@/lib/academic";
-import { callBackend } from "@/lib/server-proxy";
+import { callBackend, gatewayResponseHeaders } from "@/lib/server-proxy";
 
 export async function GET(request: NextRequest): Promise<NextResponse> {
   const query = request.nextUrl.searchParams.get("query")?.trim() || "";
@@ -12,5 +12,5 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
   const search = new URLSearchParams({ query, limit: String(limit) });
   const result = await callBackend(`/api/v1/academic/works?${search.toString()}`);
-  return NextResponse.json(result.body, { status: result.status, headers: { "Cache-Control": "no-store" } });
+  return NextResponse.json(result.body, { status: result.status, headers: gatewayResponseHeaders(result) });
 }

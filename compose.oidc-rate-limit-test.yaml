@@ -1,0 +1,13 @@
+# Compose override for disposable local OIDC rate-limit acceptance testing.
+# Apply only with the isolated base stack:
+# docker compose --env-file .env.oidc-staging -f compose.oidc-staging.yaml -f compose.oidc-rate-limit-test.yaml up -d --no-deps --force-recreate api
+# The API-only restart enables a deliberately low rate quota for the local
+# staging API; it does not change main Compose or persistent project data.
+services:
+  api:
+    environment:
+      EVIDENCEOS_RATE_LIMIT_ENABLED: "true"
+      EVIDENCEOS_RATE_LIMIT_REDIS_URL: redis://redis:6379
+      EVIDENCEOS_RATE_LIMIT_REDIS_PASSWORD: ${STAGING_REDIS_PASSWORD:?Generate .env.oidc-staging first}
+      EVIDENCEOS_RATE_LIMIT_REQUESTS_PER_MINUTE: "6"
+      EVIDENCEOS_RATE_LIMIT_EXPENSIVE_PER_MINUTE: "1"

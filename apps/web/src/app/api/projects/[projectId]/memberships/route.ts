@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { callBackend } from "@/lib/server-proxy";
+import { callBackend, gatewayResponseHeaders } from "@/lib/server-proxy";
 import { isUuid } from "@/lib/workspace";
 
 interface Context { params: Promise<{ projectId: string }> }
@@ -12,6 +12,6 @@ export async function GET(_request: Request, context: Context): Promise<NextResp
   }
   const response = await callBackend("/api/v1/projects/" + projectId + "/memberships");
   return NextResponse.json(response.body, {
-    status: response.status, headers: { "Cache-Control": "no-store" },
+    status: response.status, headers: gatewayResponseHeaders(response),
   });
 }

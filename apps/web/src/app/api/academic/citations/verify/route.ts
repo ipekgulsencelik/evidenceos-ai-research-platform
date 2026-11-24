@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { parseCitationBody } from "@/lib/academic";
-import { callBackend } from "@/lib/server-proxy";
+import { callBackend, gatewayResponseHeaders } from "@/lib/server-proxy";
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
   const parsed = parseCitationBody(await request.json().catch(() => null));
@@ -17,5 +17,5 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       expected_title: parsed.expected_title,
     }),
   });
-  return NextResponse.json(result.body, { status: result.status, headers: { "Cache-Control": "no-store" } });
+  return NextResponse.json(result.body, { status: result.status, headers: gatewayResponseHeaders(result) });
 }
