@@ -144,6 +144,17 @@ restore_start="$(date +%s)"
 gpg --batch --quiet --pinentry-mode loopback --passphrase-fd 3 \
   --decrypt "$scratch/synthetic-backup.gpg" \
   > "$scratch/verified-synthetic.dump" 3<<<"$encryption_passphrase"
+# A fresh PostgreSQL 16 database already owns an empty "public" schema.
+# The custom-format archive also includes CREATE SCHEMA public. Drop ONLY
+# this known-empty schema inside our uniquely named disposable target.
+# Never perform a schema drop on the source or an externally supplied DB.
+target_public_tables="$(query "$target" "SELECT count(*) FROM pg_tables WHERE schemaname='public'")"
+[[ "$target_public_tables" == "0" ]] || {
+  echo "Refusing restore: disposable target schema is not empty." >&2
+  exit 1
+}
+docker exec "$target" psql -X -q -U "$dbuser" -d "$database" \
+  -v ON_ERROR_STOP=1 -c "DROP SCHEMA public" >/dev/null
 docker exec -i "$target" pg_restore --exit-on-error --no-owner --no-acl \
   -U "$dbuser" -d "$database" < "$scratch/verified-synthetic.dump" >/dev/null
 
