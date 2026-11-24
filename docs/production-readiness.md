@@ -53,7 +53,7 @@ public production topology.
 | --- | --- |
 | Monitoring and alerting | FastAPI now emits privacy-minimized structured request events (see [observability foundation](api-observability-foundation.md)); cross-service request correlation, centralized log collection, error-rate/latency alerting, Redis/Postgres resource telemetry and upstream-provider monitoring remain unimplemented |
 | Privacy-preserving audit | Least-privilege access to actor-attributed audit records; retention, export, tamper detection and log redaction; ensure JWTs, cookies, passwords and PDF text do not enter logs |
-| Backup / disaster recovery | Encrypted PostgreSQL backups, verified off-host retention, **restore drill on a separate instance**, target RPO/RTO, schema migration rehearsal; test lost Redis as fail-closed with recovery |
+| Backup / disaster recovery | The [synthetic encrypted restore CI drill](disposable-postgres-recovery-drill.md) now validates migrations and source/target isolation. Real off-host backup retention, secrets/key management, production-like restore, **measured recovery RPO/RTO**, and lost-Redis procedures remain outstanding |
 | Load / resilience | Realistic concurrent users and worst-case PDF/LLM request patterns, tail latency, 429 fairness, resource ceilings, provider outages and graceful recovery |
 | Operations runbooks | On-call, deployment/rollback, outage response, credential rotation, IdP key rotation, backup restore and support escalation; dry-run each |
 | Independent review | Threat model, security testing/penetration assessment, dependency/image audit, RBAC cross-tenant review, accessibility and compliance review |
