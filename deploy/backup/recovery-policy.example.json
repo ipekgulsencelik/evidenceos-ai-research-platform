@@ -1,0 +1,46 @@
+{
+  "_warning": "THIS FILE IS A NON-DEPLOYABLE EXAMPLE: remove this field and complete every unset value",
+  "schema_version": 1,
+  "environment": "production",
+  "postgres_major": 16,
+  "recovery": {
+    "backup_mode": "physical_wal",
+    "target_rpo_minutes": null,
+    "target_rto_minutes": null,
+    "backup_interval_minutes": null,
+    "wal_archive_max_gap_minutes": null
+  },
+  "storage": {
+    "offsite": true,
+    "private_access": true,
+    "encrypted_at_rest": true,
+    "tls_in_transit": true,
+    "immutable": true,
+    "separate_failure_domain": true,
+    "retention_days": null
+  },
+  "key_management": {
+    "managed_kms": true,
+    "separate_restore_principal": true,
+    "key_rotation_runbook": true,
+    "break_glass_key_recovery": true
+  },
+  "alerts": {
+    "backup_failed": true,
+    "backup_stale": true,
+    "restore_drill_failed": true,
+    "wal_archive_gap": true
+  },
+  "rehearsal": {
+    "isolated_target": true,
+    "restore_interval_days": null,
+    "schema_version_verified": true,
+    "rbac_audit_verified": true,
+    "application_smoke_test": true
+  },
+  "ownership": {
+    "backup_operator": "UNASSIGNED",
+    "recovery_approver": "UNASSIGNED",
+    "incident_lead": "UNASSIGNED"
+  }
+}
