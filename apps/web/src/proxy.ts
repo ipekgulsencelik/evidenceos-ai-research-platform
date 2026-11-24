@@ -4,11 +4,18 @@ import { NextRequest, NextResponse } from "next/server";
 import { browserOidcSettings } from "./lib/oidc-client";
 import { SESSION_COOKIE, readSession } from "./lib/oidc-session";
 import { getSessionRegistry } from "./lib/session-registry";
+import { freshCspNonce, forwardNonce, secureResponse } from "./lib/http-security";
 import {
   isAuthorizedBasicHeader, securityEnabled, validSecurityConfiguration,
 } from "./lib/security";
 
 export async function proxy(request: NextRequest): Promise<NextResponse> {
+  const nonce = freshCspNonce();
+  const response = await routeRequest(request, nonce);
+  return secureResponse(response, nonce);
+}
+
+async function routeRequest(request: NextRequest, nonce: string): Promise<NextResponse> {
   if (process.env.EVIDENCEOS_SECURITY_MODE === "oidc") {
     const settings = browserOidcSettings();
     if (!settings) return new NextResponse("OIDC browser sign-in is not configured.", {
@@ -16,10 +23,10 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
     });
     const path = request.nextUrl.pathname;
     const publicRoutes = ["/signin", "/signed-out", "/auth/login", "/auth/callback", "/auth/health"];
-    if (publicRoutes.includes(path)) return NextResponse.next();
+    if (publicRoutes.includes(path)) return forwardNonce(request, nonce);
 
     // Logout is POST-only and checks Origin in its route handler.
-    if (path === "/auth/logout") return NextResponse.next();
+    if (path === "/auth/logout") return forwardNonce(request, nonce);
 
     const session = readSession(request.cookies.get(SESSION_COOKIE)?.value);
     let authorized = false;
@@ -51,7 +58,7 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
         { status: 403, headers: { "Cache-Control": "no-store" } },
       );
     }
-    const response = NextResponse.next();
+    const response = forwardNonce(request, nonce);
     response.headers.set("Cache-Control", "no-store");
     response.headers.set("X-Frame-Options", "DENY");
     response.headers.set("Referrer-Policy", "no-referrer");
@@ -60,7 +67,7 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
   }
 
   if (!securityEnabled(process.env.EVIDENCEOS_APP_ENV, process.env.EVIDENCEOS_SECURITY_MODE)) {
-    return NextResponse.next();
+    return forwardNonce(request, nonce);
   }
 
   const username = process.env.EVIDENCEOS_WEB_USERNAME;
@@ -84,7 +91,7 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
     });
   }
 
-  return NextResponse.next();
+  return forwardNonce(request, nonce);
 }
 
 export const config = {
