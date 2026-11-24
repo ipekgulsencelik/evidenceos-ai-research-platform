@@ -47,7 +47,6 @@ from evidenceos.presentation.api.routes.projects import router as projects_route
 from evidenceos.presentation.api.routes.quality import router as quality_router
 from evidenceos.presentation.api.routes.semantic import router as semantic_router
 from evidenceos.presentation.api.routes.workspace import router as workspace_router
-from evidenceos.presentation.api.security import validate_service_credential
 from evidenceos.presentation.api.rate_limits import enforce_research_rate_limit
 
 
