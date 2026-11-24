@@ -1,7 +1,8 @@
 /** POST-only, same-origin sign out. No cross-site GET can clear a session. */
 import { NextRequest, NextResponse } from "next/server";
 
-import { browserOidcSettings } from "@/lib/oidc-client";
+import { browserOidcSettings, discoverProvider } from "@/lib/oidc-client";
+import { providerLogoutUrl } from "@/lib/provider-logout";
 import { isAuthorizedLogoutRequest } from "@/lib/logout-request";
 import { FLOW_COOKIE, SESSION_COOKIE, cookieOptions, readSession } from "@/lib/oidc-session";
 import { getSessionRegistry } from "@/lib/session-registry";
@@ -28,8 +29,26 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       });
     }
   }
-  const response = NextResponse.redirect(new URL("/signin", settings.origin), { status: 303 });
-  response.headers.set("Cache-Control", "no-store");
+  // Revoke our browser session *before* talking to the external provider.
+  // If discovery is unavailable, never resurrect local access and never
+  // misreport provider logout as completed.
+  let next = "/signin";
+  if (session) {
+    try {
+      const discovered = await discoverProvider(settings);
+      next = providerLogoutUrl(discovered, settings) ||
+        "/signin?notice=provider-logout-unavailable";
+    } catch {
+      next = "/signin?notice=provider-logout-unavailable";
+    }
+  }
+
+  // A JSON response lets the same-origin fetch complete before the browser
+  // makes a top-level cross-origin navigation. Following the IdP redirect
+  // inside fetch would fail CORS and leave the user on the current page.
+  const response = NextResponse.json({ next }, {
+    status: 200, headers: { "Cache-Control": "no-store" },
+  });
   for (const name of [FLOW_COOKIE, SESSION_COOKIE]) {
     response.cookies.set(name, "", {
       ...cookieOptions(settings.secureCookies, 0), expires: new Date(0),
