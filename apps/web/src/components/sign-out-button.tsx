@@ -36,7 +36,7 @@ export function SignOutButton() {
       } else {
         const url = new URL(next);
         if (url.protocol !== "https:" || url.username || url.password ||
-            url.hash || !url.pathname.endsWith("/protocol/openid-connect/logout")) {
+            url.hash) {
           throw new Error("Unexpected provider logout destination.");
         }
         // This is a navigation (not a fetch) so Keycloak can clear SSO cookies.
