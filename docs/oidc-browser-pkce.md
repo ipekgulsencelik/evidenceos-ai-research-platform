@@ -138,16 +138,22 @@ is unavailable or publishes no trusted end-session endpoint, the browser
 returns to `/signin?notice=provider-logout-unavailable`: the application
 session is revoked, while the Keycloak/IdP SSO session may still be active.
 
-The RP-Initiated Logout request intentionally uses the verified confidential
-`client_id` and **does not** include `id_token_hint`,
-`post_logout_redirect_uri`, access tokens, client secrets, or user-controlled
-redirect URLs. Keycloak 26 may show a confirmation screen; the user must
-confirm provider logout before attempting another sign-in. After confirmation,
-the browser may remain on Keycloak's logged-out page; navigate to the
-EvidenceOS /signin URL manually. This approach works with the **existing**
-staging realm without re-importing or altering generated credentials. A
-follow-up can add a registered `post_logout_redirect_uri` and securely
-server-held ID token hint to enable a seamless return where supported.
+The RP-Initiated Logout request binds the confidential `client_id` and a
+**fixed**, server-derived `post_logout_redirect_uri` to
+`EVIDENCEOS_WEB_ORIGIN/signed-out`. This URI must be registered as an exact
+**Valid Post Logout Redirect URI** in the IdP client. No user-controlled URL,
+ID token hint, access token, or client secret is placed in the navigation URL.
+Keycloak 26 may show a logout-confirmation page and a return-to-application
+link depending on the client's confirmation settings; do not bypass this.
+Upon returning to `/signed-out`, EvidenceOS shows **You are logged out**
+and an explicit **Sign in again** link to `/auth/login`; it never starts a
+new login without the user clicking that link.
+
+For a previously provisioned local test realm, run
+`python scripts/configure_oidc_staging_logout.py` once after updating
+the code. This securely changes only the existing web client's logout
+allowlist entry and preserves accounts, research projects, and keys. New
+staging realm imports register the address from the outset.
 
 Logout does not revoke independently stolen raw JWT bearer tokens, already
 in-flight API requests or every unrelated device/SSO session. Verify the

@@ -15,7 +15,7 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
       status: 503, headers: { "Cache-Control": "no-store" },
     });
     const path = request.nextUrl.pathname;
-    const publicRoutes = ["/signin", "/auth/login", "/auth/callback", "/auth/health"];
+    const publicRoutes = ["/signin", "/signed-out", "/auth/login", "/auth/callback", "/auth/health"];
     if (publicRoutes.includes(path)) return NextResponse.next();
 
     // Logout is POST-only and checks Origin in its route handler.

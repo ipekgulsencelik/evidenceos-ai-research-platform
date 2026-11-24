@@ -146,12 +146,35 @@ and replay rejection. In Keycloak 26, the `client_id`-only RP-Initiated Logout
 request displays a confirmation screen. The browser test completes that
 confirmation and then asserts that a new login requires credentials.
 
-When testing manually, click **Sign out** in the EvidenceOS workspace;
-confirm the logout on Keycloak's own screen if asked, then navigate to
-`http://127.0.0.1:3101/signin`. Clicking **Sign in securely** should
-open the Keycloak username/password form again. A failed provider logout
-will display a warning at the EvidenceOS sign-in page, but local Redis
-revocation still prevents use of the old application session.
+### One-time logout return registration for an already running test realm
+
+If the staging realm was created before the signed-out return was introduced,
+Keycloak `--import-realm` uses `IGNORE_EXISTING` and will **not** update
+the existing client. Run the narrow, idempotent admin update **once** from
+the repository root, with the existing staging services running:
+
+```powershell
+python scripts/configure_oidc_staging_logout.py
+```
+
+The script authenticates to the *fixed localhost* Keycloak master realm using
+the **existing untracked staging administrator password**, checks the exact
+client ID, confidential OIDC mode and callback URL, then adds only
+`http://127.0.0.1:3101/signed-out` to that client's Valid Post Logout
+Redirect URIs. It does not log credentials or create, delete, or reset user
+accounts, secrets, projects, or databases. Do **not** run
+`scripts/prepare_oidc_staging.py` again, remove `staging/runtime/`, or
+run `docker compose down -v`.
+
+When testing manually, click **Sign out** in the EvidenceOS workspace.
+Keycloak may show its own confirmation screen and return-to-application link.
+After confirming logout and following that link (if displayed), the browser
+should show `http://127.0.0.1:3101/signed-out` with **You are logged out**
+and **Sign in again**. The page does not start authentication automatically;
+**one intentional click** on Sign in again starts a fresh OIDC login and should
+request Keycloak credentials. A failed provider logout
+shows a warning at EvidenceOS sign-in; local Redis revocation still prevents
+use of the former EvidenceOS session.
 
 The E2E run **creates a test project in the isolated staging database**.
 It does not read or modify your existing research projects. Re-running the

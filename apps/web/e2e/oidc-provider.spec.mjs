@@ -67,25 +67,38 @@ async function listProjects(context) {
 async function logOutAtProvider(page, context) {
   await page.getByRole("button", { name: "Sign out" }).click();
   await page.waitForURL((url) =>
-    url.origin !== new URL(origin).origin || url.pathname === "/signin",
+    url.origin !== new URL(origin).origin || url.pathname === "/signed-out",
   { timeout: 45000 });
 
-  // Keycloak intentionally shows a confirmation screen for a client_id-only
-  // RP-Initiated Logout. It cannot be skipped without id_token_hint.
+  // Local Redis revocation takes effect before provider logout.
+  expect((await context.request.get(origin + "/api/identity")).status()).toBe(401);
+
+  // Keycloak can show a confirmation page when using client_id without an
+  // id_token_hint. The registered redirect may be a follow-up link/button,
+  // not an automatic redirect when logout confirmation is enabled.
   if (new URL(page.url()).origin !== new URL(origin).origin) {
-    const confirm = page.getByRole("button", { name: /^(Log out|Logout|Yes)$/i });
-    if (await confirm.isVisible({ timeout: 3000 }).catch(() => false)) {
+    const confirm = page.getByRole("button", { name: /^(Log out|Logout|Yes|Confirm logout)$/i });
+    if (await confirm.isVisible({ timeout: 2500 }).catch(() => false)) {
       await confirm.click();
+    }
+    const back = page.getByRole("link", {
+      name: /back to application|return to application|continue|back to evidenceos/i,
+    }).or(page.getByRole("button", {
+      name: /back to application|return to application|continue|back to evidenceos/i,
+    })).first();
+    if (await back.isVisible({ timeout: 2500 }).catch(() => false)) {
+      await back.click();
     }
   }
 
-  // Local revocation must already have taken effect, even if the IdP prompts.
-  expect((await context.request.get(origin + "/api/identity")).status()).toBe(401);
+  await page.waitForURL((url) => url.origin === origin && url.pathname === "/signed-out", {
+    timeout: 45000,
+  });
+  await expect(page.getByRole("heading", { name: "You are logged out" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Sign in again" })).toBeVisible();
 
-  // Prove that provider SSO was cleared as well: a new login must display
-  // the provider's username form, rather than silently returning to EvidenceOS.
-  await page.goto(origin + "/signin");
-  await page.getByRole("link", { name: "Sign in securely" }).click();
+  // Sign-in is user-controlled: this one click starts a new OIDC login.
+  await page.getByRole("link", { name: "Sign in again" }).click();
   await expect(page.locator('input[name="username"]')).toBeVisible({ timeout: 45000 });
 }
 
