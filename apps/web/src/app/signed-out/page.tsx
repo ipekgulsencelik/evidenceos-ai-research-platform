@@ -12,7 +12,7 @@ export default function SignedOutPage() {
     }}>
       <h1>You are logged out</h1>
       <p>Your EvidenceOS session has ended.</p>
-      <a href="/signin" style={{
+      <a href="/auth/login" style={{
         display: "inline-block", padding: "12px 20px", borderRadius: 8,
         background: "#147d79", color: "#fff", textDecoration: "none",
         fontWeight: 600, marginTop: 12,
