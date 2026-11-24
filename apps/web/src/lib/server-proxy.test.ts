@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { callBackend } from "./server-proxy.ts";
+import { callBackend, gatewayResponseHeaders } from "./server-proxy.ts";
 
 const original = globalThis.fetch;
 const previousURL = process.env.BACKEND_API_URL;
@@ -40,4 +40,41 @@ test("maps network failures and invalid responses to 502", async () => {
   assert.equal((await callBackend("/api/v1/academic/works")).status, 502);
   globalThis.fetch = async () => new Response("upstream html error", { status: 200 });
   assert.equal((await callBackend("/api/v1/academic/works")).status, 502);
+});
+
+test("forwards only validated Retry-After for rate limiting or temporary outages", async () => {
+  globalThis.fetch = async () => new Response(JSON.stringify({ detail: "Too many requests" }), {
+    status: 429,
+    headers: { "Retry-After": "37", "X-Internal-Secret": "do-not-forward" },
+  });
+  const quota = await callBackend("/api/v1/projects");
+  assert.equal(quota.status, 429);
+  assert.equal(quota.retryAfterSeconds, 37);
+  assert.deepEqual(gatewayResponseHeaders(quota), {
+    "Cache-Control": "no-store",
+    "Retry-After": "37",
+  });
+
+  globalThis.fetch = async () => new Response(JSON.stringify({ detail: "Temporarily unavailable" }), {
+    status: 503, headers: { "Retry-After": "5" },
+  });
+  const unavailable = await callBackend("/api/v1/projects");
+  assert.equal(unavailable.retryAfterSeconds, 5);
+  assert.equal(gatewayResponseHeaders(unavailable)["Retry-After"], "5");
+});
+
+test("invalid or out-of-range retry hints are never reflected to browser clients", async () => {
+  for (const bad of ["0", "-1", "86401", "12.5", "Mon, 01 Jan 2030 00:00:00 GMT", "999999"]) {
+    globalThis.fetch = async () => new Response(JSON.stringify({ detail: "Too many requests" }), {
+      status: 429, headers: { "Retry-After": bad },
+    });
+    const result = await callBackend("/api/v1/projects");
+    assert.equal(gatewayResponseHeaders(result)["Retry-After"], undefined);
+  }
+  globalThis.fetch = async () => new Response(JSON.stringify({ detail: "OK" }), {
+    status: 200, headers: { "Retry-After": "42" },
+  });
+  const success = await callBackend("/api/v1/projects");
+  assert.equal(success.retryAfterSeconds, undefined);
+  assert.equal(gatewayResponseHeaders(success)["Retry-After"], undefined);
 });
