@@ -90,5 +90,8 @@ incident-recovery duration, including operations and upstream dependencies.
   alert thresholds and objective RPO/RTO targets before pilot approval.
 
 This feature implements the **synthetic CI drill milestone**, not every
-acceptance criterion of Issue #38. Leave Issue #38 open until those
-operational requirements are demonstrated and approved.
+acceptance criterion of Issue #38. A separate [backup architecture
+proposal](backup-architecture-proposal.md), [operator runbook](backup-recovery-runbook.md)
+and [offline policy gate](../scripts/backup_policy_contract.py) describe the
+unimplemented operational controls. Leave Issue #38 open until the
+production-like requirements are demonstrated and independently approved.
