@@ -28,6 +28,11 @@ class Settings(BaseSettings):
     groq_api_key: str | None = None
     groq_model: str = "openai/gpt-oss-20b"
     research_timeout_seconds: float = Field(default=8.0, ge=1.0, le=30.0)
+    rate_limit_enabled: bool = False
+    rate_limit_redis_url: str | None = None
+    rate_limit_redis_password: str | None = None
+    rate_limit_requests_per_minute: int = Field(default=120, ge=1, le=10000)
+    rate_limit_expensive_per_minute: int = Field(default=12, ge=1, le=10000)
 
     @model_validator(mode="after")
     def validate_security(self) -> Self:
@@ -38,6 +43,26 @@ class Settings(BaseSettings):
             self.api_service_token is None or len(self.api_service_token) < 32
         ):
             raise ValueError("service_token mode requires a token of at least 32 characters")
+        if self.app_env == "production" and not self.rate_limit_enabled:
+            raise ValueError("production requires distributed API rate limiting")
+        if self.rate_limit_enabled:
+            if not self.rate_limit_redis_url or not self.rate_limit_redis_password:
+                raise ValueError("rate limiting requires Redis URL and password")
+            if not 32 <= len(self.rate_limit_redis_password) <= 512:
+                raise ValueError("rate limiting requires a strong Redis password")
+            parsed_redis = urlsplit(self.rate_limit_redis_url)
+            if (
+                parsed_redis.scheme not in {"redis", "rediss"}
+                or not parsed_redis.hostname
+                or parsed_redis.username is not None
+                or parsed_redis.password is not None
+                or parsed_redis.query
+                or parsed_redis.fragment
+                or parsed_redis.path not in {"", "/"}
+                or len(self.rate_limit_redis_url) > 2048
+                or (self.app_env == "production" and parsed_redis.scheme != "rediss")
+            ):
+                raise ValueError("rate limiter needs a trusted Redis endpoint; TLS in production")
         if self.security_mode == "oidc":
             if not all((self.oidc_issuer, self.oidc_audience, self.oidc_jwks_url)):
                 raise ValueError("oidc requires issuer, API audience, and trusted JWKS URL")
