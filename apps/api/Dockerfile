@@ -18,4 +18,4 @@ RUN uv sync --no-dev --no-editable && \
     chown -R appuser:appuser /app
 USER appuser
 EXPOSE 8000
-CMD ["/app/.venv/bin/uvicorn", "evidenceos.presentation.api.app:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1"]
+CMD ["/app/.venv/bin/uvicorn", "evidenceos.presentation.api.app:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1", "--no-access-log"]
