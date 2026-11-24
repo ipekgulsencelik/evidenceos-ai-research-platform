@@ -96,8 +96,10 @@ Local logout revokes all copies of that browser cookie after the Redis DELETE
 succeeds. This does **not** revoke an independently stolen, raw JWT access
 token against the FastAPI resource server; such a bearer token can remain
 valid until its expiry or provider-side revocation. Also, already-in-flight
-API requests may finish after logout. Provider SSO sessions are not ended by
-local logout. For higher assurance, add token revocation/introspection as
+API requests may finish after logout. The app now requests RP-Initiated Logout when supported by the
+configured provider. If discovery is unavailable, the local session remains
+revoked while the user receives an explicit warning; IdP logout is not claimed.
+A Keycloak confirmation screen may require user action. For higher assurance, add token revocation/introspection as
 supported by the provider, device/session inventory, anomaly detection,
 IdP-specific token lifecycle policy, replay protection for OAuth transaction
 cookies, and automated real-provider integration tests. Deploy only with
@@ -116,8 +118,12 @@ modes continue only for the previous localhost single-operator workflow.
 
 The Sign out button submits an authenticated **same-origin fetch POST** to
 `/auth/logout`. It sends the non-CORS-safelisted
-`X-EvidenceOS-Logout: 1` header and follows the server's verified 303
-redirect to `/signin`. The server validates the exact pinned
+`X-EvidenceOS-Logout: 1` header. The server revokes the Redis session
+**before** fetching OIDC discovery and then returns a no-store JSON payload
+with a trusted next navigation target. JavaScript navigates top-level
+to the provider's discovered `end_session_endpoint` using the
+`openid-client` RP-Initiated Logout helper. It never fetches that endpoint
+inside JavaScript, because cross-origin Fetch/CORS is not a logout mechanism. The server validates the exact pinned
 `EVIDENCEOS_WEB_ORIGIN` when the browser supplies `Origin`; if a browser
 omits that header, it accepts the request only with the same-origin
 `Sec-Fetch-Site` browser-generated metadata **and** the explicit custom
@@ -126,8 +132,23 @@ POSTs are rejected. Plain GET navigation to `/auth/logout` is never a
 valid logout action. Do not weaken this to accept arbitrary `Referer`,
 `Host`, or `X-Forwarded-Host` values.
 
-The browser navigates to the sign-in page only after a successful POST
-redirect. An unreachable Redis session registry returns 503 and the UI
-does **not** claim that session revocation succeeded. Logout revokes
-this browser's Redis-backed session, not independently stolen raw JWTs
-or the identity provider's global SSO session.
+If Redis is unavailable, the server returns 503 **without clearing session
+cookies** and the UI does not pretend revocation succeeded. If the provider
+is unavailable or publishes no trusted end-session endpoint, the browser
+returns to `/signin?notice=provider-logout-unavailable`: the application
+session is revoked, while the Keycloak/IdP SSO session may still be active.
+
+The RP-Initiated Logout request intentionally uses the verified confidential
+`client_id` and **does not** include `id_token_hint`,
+`post_logout_redirect_uri`, access tokens, client secrets, or user-controlled
+redirect URLs. Keycloak 26 may show a confirmation screen; the user must
+confirm provider logout before attempting another sign-in. After confirmation,
+the browser may remain on Keycloak's logged-out page; navigate to the
+EvidenceOS /signin URL manually. This approach works with the **existing**
+staging realm without re-importing or altering generated credentials. A
+follow-up can add a registered `post_logout_redirect_uri` and securely
+server-held ID token hint to enable a seamless return where supported.
+
+Logout does not revoke independently stolen raw JWT bearer tokens, already
+in-flight API requests or every unrelated device/SSO session. Verify the
+effect against the chosen provider and its session policies.
