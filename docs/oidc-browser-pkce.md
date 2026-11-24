@@ -84,7 +84,7 @@ a POST-only **Sign out** action. Local and service-token modes remain intact.
   lifetime. There is **no silent refresh** and no refresh token storage.
 - OIDC mode redirects unauthenticated HTML requests to login, returns 401
   for API requests, and rejects cross-origin state-changing API requests.
-  Logout requires POST with an exact same-origin `Origin` header.
+  Logout requires a same-origin POST with a non-safelisted header; exact `Origin` is checked when present, and missing `Origin` requires `Sec-Fetch-Site: same-origin`.
 - All client-configured OIDC URLs and redirect origins are loaded from server
   environment variables, not request headers or query parameters.
 
