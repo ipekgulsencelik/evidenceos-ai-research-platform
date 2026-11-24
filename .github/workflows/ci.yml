@@ -142,6 +142,13 @@ jobs:
         run: |
           EVIDENCEOS_INGRESS_HOST=research.example.invalid docker compose -f compose.yaml -f compose.https-ingress-reference.yaml config --quiet
           python -m unittest discover -s scripts -p 'test_https_ingress_reference.py' -v
+      - name: Validate offline backup policy contract and rejected template
+        run: |
+          python -m unittest discover -s scripts -p 'test_backup_policy_contract.py' -v
+          if python scripts/backup_policy_contract.py deploy/backup/recovery-policy.example.json; then
+            echo "Intentionally incomplete backup policy template was accepted" >&2
+            exit 1
+          fi
       - name: Build API image
         run: docker build -t evidenceos-api:ci apps/api
       - name: Verify synthetic encrypted backup and separate PostgreSQL restore
