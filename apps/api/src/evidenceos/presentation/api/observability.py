@@ -30,13 +30,16 @@ _ROUTE_GROUPS = (
 
 
 def route_group(scope: Mapping[str, object]) -> str:
-    """Classify a registered framework route; never echo a user-controlled path."""
-    route = scope.get("route")
-    template = getattr(route, "path", None)
-    if not isinstance(template, str):
+    """Classify matched routes with fixed groups; never emit raw URL content."""
+    # Classify using the path only after the framework matched a registered
+    # route. Incoming path strings are never included in the emitted event.
+    if scope.get("route") is None:
         return "unmatched"
+    path = scope.get("path")
+    if not isinstance(path, str):
+        return "other"
     for prefix, family in _ROUTE_GROUPS:
-        if template == prefix or template.startswith(prefix + "/"):
+        if path == prefix or path.startswith(prefix + "/"):
             return family
     return "other"
 
