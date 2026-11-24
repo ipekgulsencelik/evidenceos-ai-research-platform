@@ -81,7 +81,7 @@ def test_known_route_logs_whitelisted_fields_and_server_generated_id(
 
 
 def test_unauthorized_and_unmatched_requests_emit_safe_bounded_events(
-    events: list[dict[str, object]]
+    events: list[dict[str, object]],
 ) -> None:
     client = TestClient(
         create_app(
@@ -111,6 +111,7 @@ def test_healthy_liveness_is_suppressed_but_failed_health_is_recorded(
     client = TestClient(app)
     assert client.get("/api/v1/health/live").status_code == 200
     assert events == []
+
     # A failed readiness DB query should be logged by status, never by
     # raw connection strings or exception details.
     class BrokenSession:
