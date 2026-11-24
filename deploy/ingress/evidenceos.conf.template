@@ -2,6 +2,10 @@
 # nginx official image: envsubst renders only variables whose names start with
 # EVIDENCEOS_INGRESS_, preserving Nginx $remote_addr and $request_uri.
 server_tokens off;
+# Avoid logging request URLs, query strings, authorization or cookies by default.
+# Production telemetry still needs owned retention and access-control policies.
+log_format evidenceos_safe 'rid=$request_id method=$request_method status=$status '
+                          'duration=$request_time upstream=$upstream_status';
 
 limit_req_zone $binary_remote_addr zone=ingress_global:10m rate=10r/s;
 limit_req_zone $binary_remote_addr zone=ingress_login:10m rate=1r/s;
@@ -11,12 +15,14 @@ limit_conn_zone $binary_remote_addr zone=ingress_connections:10m;
 server {
     listen 8080 default_server;
     server_name _;
+    access_log /dev/stdout evidenceos_safe;
     return 444;
 }
 
 server {
     listen 8080;
     server_name ${EVIDENCEOS_INGRESS_HOST};
+    access_log /dev/stdout evidenceos_safe;
     return 308 https://${EVIDENCEOS_INGRESS_HOST}$request_uri;
 }
 
@@ -33,6 +39,7 @@ server {
 server {
     listen 8443 ssl;
     server_name ${EVIDENCEOS_INGRESS_HOST};
+    access_log /dev/stdout evidenceos_safe;
     ssl_certificate /etc/nginx/ingress-tls/fullchain.pem;
     ssl_certificate_key /etc/nginx/ingress-tls/privkey.pem;
     ssl_protocols TLSv1.2 TLSv1.3;
